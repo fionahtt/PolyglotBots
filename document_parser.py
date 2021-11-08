@@ -9,6 +9,8 @@ class DocumentParser:
         self.text = text
         self.doc = self.nlp(text)
         self.sentences = self.doc.sentences
+
+    def print_token_data(self):
         for i, sentence in enumerate(self.doc.sentences):
             print(f'====== Sentence {i+1} Words =======')
             for word in sentence.words:
