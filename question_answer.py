@@ -31,7 +31,6 @@ def when(sentence):
 
 # rahjshiba
 
-
 def howmany(sentence):
     question = "How many"
     nsubj_head = 0
@@ -55,16 +54,34 @@ def howmany(sentence):
         phrase_start = sentence.words[pred_nummod_i].head - 1
         how_many_noun = sentence.words[phrase_start]
         question = question + " " + how_many_noun.text
-        question = question + " " + expl_does_question_phrase(subject, sentence.words[nsubj_head])
-        for word in sentence.words[phrase_start + 1: len(sentence.words) -1]:
+        question = question + " " + \
+            expl_does_question_phrase(
+                subject, predicate, sentence.words[nsubj_head])
+        for word in sentence.words[phrase_start + 1: len(sentence.words) - 1]:
             question = question + " " + word.text.lower()
     question += '?'
     return question
 
-def expl_does_question_phrase(subject, verb):
+
+def auxilary_verb_flip(subject, verb):
+    aux_verbs = ['be', 'have', 'can', 'could', 'will', 'would', 'do']
+    aux_verb = None
+    flipped_aux_phrase = ''
+    if subject[len(subject) - 1].lemma in aux_verbs:
+        aux_verb = subject[len(subject) - 1]
+        flipped_aux_phrase = flipped_aux_phrase + aux_verb.text.lower() + ' '
+        for word in subject[0:len(subject) - 1]:
+            flipped_aux_phrase = flipped_aux_phrase + word.text.lower() + ' '
+            flipped_aux_phrase = flipped_aux_phrase + verb.text.lower() + ' '
+        return flipped_aux_phrase
+    return None
+
+
+def expl_does_question_phrase(subject, predicate, verb):
     has_expl = None
     conjugated_do = None
     flipped_verb_phrase = ''
+    aux_verb_flipped_phrase = auxilary_verb_flip(subject, verb)
 
     for word in subject:
         if word.deprel == 'expl':
@@ -73,12 +90,12 @@ def expl_does_question_phrase(subject, verb):
 
     for word in subject:
         if word.xpos == 'PRP':
-            if word.text.lower() in ['it','he','she']:
+            if word.text.lower() in ['it', 'he', 'she']:
                 conjugated_do = 'does'
                 break
             elif word.text.lower() in ['i', 'you', 'we', 'they']:
-               conjugated_do = 'do'
-               break
+                conjugated_do = 'do'
+                break
         elif word.xpos == 'NNP':
             conjugated_do = 'does'
             break
@@ -88,14 +105,17 @@ def expl_does_question_phrase(subject, verb):
         elif word.xpos == 'NN':
             conjugated_do = 'does'
             break
-        
+
     if has_expl != None:
         flipped_verb_phrase = verb.text.lower() + " " + has_expl.text.lower()
+    elif aux_verb_flipped_phrase != None:
+        flipped_verb_phrase = aux_verb_flipped_phrase
     else:
+
         flipped_verb_phrase = conjugated_do + " "
         for word in subject:
             flipped_verb_phrase = flipped_verb_phrase + word.text.lower() + " "
-        
+
         flipped_verb_phrase += verb.lemma
     return flipped_verb_phrase
 
@@ -111,10 +131,25 @@ def is_howmany(subject, predicate):
     return (sub_i, pred_i)
 
 
-
 # celestine
 def yesno(sentence):
-    return
+    nsubj_head = 0
+    for word in sentence.words:
+        if word.head == 0:
+            nsubj_head = word.id - 1
+            break
+    subject = sentence.words[0:nsubj_head]
+    predicate = sentence.words[nsubj_head:]
+    verb = sentence.words[nsubj_head]
+
+    yes_no_question = expl_does_question_phrase(subject, predicate, verb) + ' '
+
+    for word in predicate[1:len(predicate) - 1]:
+        yes_no_question = yes_no_question + word.text.lower() + ' '
+    
+    yes_no_question += '?'
+
+    return yes_no_question.capitalize()
 
 
 load_text("text/pie.txt")
@@ -132,8 +167,6 @@ howmany9 = nlp('The tall trees which they were climbing had 6 apples.')
 howmany10 = nlp('The tall tree covered in spiders had 6 apples.')
 
 
-
-
 print(howmany(howmany1.sentences[0]))
 print(howmany(howmany2.sentences[0]))
 print(howmany(howmany3.sentences[0]))
@@ -144,3 +177,14 @@ print(howmany(howmany7.sentences[0]))
 print(howmany(howmany8.sentences[0]))
 print(howmany(howmany9.sentences[0]))
 print(howmany(howmany10.sentences[0]))
+print(yesno(howmany1.sentences[0]))
+print(yesno(howmany2.sentences[0]))
+print(yesno(howmany3.sentences[0]))
+print(yesno(howmany4.sentences[0]))
+print(yesno(howmany5.sentences[0]))
+print(yesno(howmany6.sentences[0]))
+print(yesno(howmany7.sentences[0]))
+print(yesno(howmany8.sentences[0]))
+print(yesno(howmany9.sentences[0]))
+print(yesno(howmany10.sentences[0]))
+
