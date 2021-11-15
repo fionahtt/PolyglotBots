@@ -12,16 +12,18 @@ RUN apt-get -y update && \
 
 # Install spaCy
 RUN pip3 install --upgrade pip
-RUN pip3 install spacy
-RUN pip3 install stanza
-RUN python3 -m spacy download en_core_web_lg
+# RUN pip3 install spacy
+# RUN python3 -m spacy download en_core_web_lg
+RUN pip3 install stanza -U
+RUN python3 -c 'import stanza; stanza.download("en")'
 
 
 
 # Add the files into container, under QA folder, modify this based on your need
 RUN mkdir /QA
-ADD ask /QA
+ADD ask.py /QA
 ADD answer /QA
+ADD document_parser.py /QA
 
 # Change the permissions of programs
 CMD ["chmod 777 /QA/*"]

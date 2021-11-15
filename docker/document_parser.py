@@ -1,9 +1,9 @@
 import stanza
-stanza.download('en')
+stanza.download('en',logging_level='WARN')
 
 
 class DocumentParser:
-    nlp = stanza.Pipeline(lang='en', processors='tokenize,mwt,pos')
+    nlp = stanza.Pipeline(lang='en', processors='tokenize,mwt,pos,lemma,depparse,constituency', verbose=False)
 
     def __init__(self, text):
         self.text = text

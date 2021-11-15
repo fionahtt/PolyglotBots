@@ -1,14 +1,20 @@
+#!/usr/bin/python3 -W ignore::DeprecationWarning
+# -*- coding:utf8 -*-
+
+import sys
+import codecs
 import stanza
 from document_parser import DocumentParser
 
-nlp = stanza.Pipeline(lang='en', processors='tokenize,mwt,pos,lemma,depparse')
+
+
 
 
 def load_text(filename):
     with open(filename) as textFile:
         text = textFile.read()
         parser = DocumentParser(text)
-        parser.print_token_data()
+        return parser
 
 # if possible return question, if not return None
 
@@ -152,39 +158,56 @@ def yesno(sentence):
     return yes_no_question.capitalize()
 
 
-load_text("text/pie.txt")
+if __name__ == "__main__":
+    input_file = sys.argv[1]
+
+    parser = load_text(input_file)
+
+    N = int(sys.argv[2])
+
+    questions = []
+
+    for i, sentence in enumerate(parser.sentences):
+        question = howmany(sentence)
+        questions.append(question)
+
+    for i in range(N):
+        if (i < len(questions)):
+            print(questions[i])
+
+# load_text("text/pie.txt")
 
 
-howmany1 = nlp('Five dogs walk.')
-howmany2 = nlp('He has five kids at the house.')
-howmany3 = nlp('There are 7 apples.')
-howmany4 = nlp('The tall trees laying in the sun have 6 apples.')
-howmany5 = nlp('it remains one of the 88 modern constellations today.')
-howmany6 = nlp('They have 3 cats.')
-howmany7 = nlp('Harriet is walking 3 dogs.')
-howmany8 = nlp('You swim 6 miles.')
-howmany9 = nlp('The tall trees which they were climbing had 6 apples.')
-howmany10 = nlp('The tall tree covered in spiders had 6 apples.')
+# howmany1 = nlp('Five dogs walk.')
+# howmany2 = nlp('He has five kids at the house.')
+# howmany3 = nlp('There are 7 apples.')
+# howmany4 = nlp('The tall trees laying in the sun have 6 apples.')
+# howmany5 = nlp('it remains one of the 88 modern constellations today.')
+# howmany6 = nlp('They have 3 cats.')
+# howmany7 = nlp('Harriet is walking 3 dogs.')
+# howmany8 = nlp('You swim 6 miles.')
+# howmany9 = nlp('The tall trees which they were climbing had 6 apples.')
+# howmany10 = nlp('The tall tree covered in spiders had 6 apples.')
 
 
-print(howmany(howmany1.sentences[0]))
-print(howmany(howmany2.sentences[0]))
-print(howmany(howmany3.sentences[0]))
-print(howmany(howmany4.sentences[0]))
-print(howmany(howmany5.sentences[0]))
-print(howmany(howmany6.sentences[0]))
-print(howmany(howmany7.sentences[0]))
-print(howmany(howmany8.sentences[0]))
-print(howmany(howmany9.sentences[0]))
-print(howmany(howmany10.sentences[0]))
-print(yesno(howmany1.sentences[0]))
-print(yesno(howmany2.sentences[0]))
-print(yesno(howmany3.sentences[0]))
-print(yesno(howmany4.sentences[0]))
-print(yesno(howmany5.sentences[0]))
-print(yesno(howmany6.sentences[0]))
-print(yesno(howmany7.sentences[0]))
-print(yesno(howmany8.sentences[0]))
-print(yesno(howmany9.sentences[0]))
-print(yesno(howmany10.sentences[0]))
+# print(howmany(howmany1.sentences[0]))
+# print(howmany(howmany2.sentences[0]))
+# print(howmany(howmany3.sentences[0]))
+# print(howmany(howmany4.sentences[0]))
+# print(howmany(howmany5.sentences[0]))
+# print(howmany(howmany6.sentences[0]))
+# print(howmany(howmany7.sentences[0]))
+# print(howmany(howmany8.sentences[0]))
+# print(howmany(howmany9.sentences[0]))
+# print(howmany(howmany10.sentences[0]))
+# print(yesno(howmany1.sentences[0]))
+# print(yesno(howmany2.sentences[0]))
+# print(yesno(howmany3.sentences[0]))
+# print(yesno(howmany4.sentences[0]))
+# print(yesno(howmany5.sentences[0]))
+# print(yesno(howmany6.sentences[0]))
+# print(yesno(howmany7.sentences[0]))
+# print(yesno(howmany8.sentences[0]))
+# print(yesno(howmany9.sentences[0]))
+# print(yesno(howmany10.sentences[0]))
 
