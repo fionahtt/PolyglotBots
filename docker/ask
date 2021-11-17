@@ -117,7 +117,6 @@ def expl_does_question_phrase(subject, predicate, verb):
     elif aux_verb_flipped_phrase != None:
         flipped_verb_phrase = aux_verb_flipped_phrase
     else:
-
         flipped_verb_phrase = conjugated_do + " "
         for word in subject:
             flipped_verb_phrase = flipped_verb_phrase + word.text.lower() + " "
@@ -157,7 +156,6 @@ def yesno(sentence):
 
     return yes_no_question.capitalize()
 
-
 if __name__ == "__main__":
     input_file = sys.argv[1]
 
@@ -168,12 +166,17 @@ if __name__ == "__main__":
     questions = []
 
     for i, sentence in enumerate(parser.sentences):
-        question = howmany(sentence)
-        questions.append(question)
+        try:
+            question = howmany(sentence)
+            questions.append(question)
+        except TypeError:
+            pass
 
     for i in range(N):
         if (i < len(questions)):
             print(questions[i])
+        else:
+            print('Q'+str(i+1))
 
 # load_text("text/pie.txt")
 
