@@ -168,15 +168,14 @@ if __name__ == "__main__":
     for i, sentence in enumerate(parser.sentences):
         try:
             question = howmany(sentence)
-            questions.append(question)
+            if (question != None):
+                questions.append(question)
         except TypeError:
             pass
 
     for i in range(N):
         if (i < len(questions)):
             print(questions[i])
-        else:
-            print('Q'+str(i+1))
 
 # load_text("text/pie.txt")
 
