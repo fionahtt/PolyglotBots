@@ -187,7 +187,7 @@ if __name__ == "__main__":
 # howmany7 = nlp('Harriet is walking 3 dogs.')
 # howmany8 = nlp('You swim 6 miles.')
 # howmany9 = nlp('The tall trees which they were climbing had 6 apples.')
-# howmany10 = nlp('The tall tree covered in spiders had 6 apples.')
+#howmany10 = nlp('The tall tree covered in spiders had 6 apples.')
 
 
 # print(howmany(howmany1.sentences[0]))
@@ -211,3 +211,18 @@ if __name__ == "__main__":
 # print(yesno(howmany9.sentences[0]))
 # print(yesno(howmany10.sentences[0]))
 
+
+kangaroo_f = open('/Users/Rahjshiba/Question_Answer_Dataset_v1.2 2/S08/data/set1/a1.txt')
+kangaroo_text = kangaroo_f.read()
+kangaroo_f.close()
+
+#kangaroo_parser = DocumentParser(kangaroo_text)
+#viable_sentences = kangaroo_parser.find_viable_questions_sentences()
+#print(kangaroo_parser.sentences[2].text)
+#print(kangaroo_parser.sentences[2].constituency)
+
+nlp = stanza.Pipeline(
+        lang='en', processors='tokenize,mwt,pos,lemma,depparse,constituency', verbose=False)
+kangaroo_nlp = nlp(kangaroo_text)
+print(kangaroo_nlp.sentences[2].text)
+print(kangaroo_nlp.sentences[2].constituency)
