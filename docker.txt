@@ -1,2 +1,2 @@
-sethburster/polyglotbots:v1
+sethburster/polyglotbots:v2
 Team: PolyGlotBots (Seth Setse, Rahjshiba Koanda, Fiona Thendean)
