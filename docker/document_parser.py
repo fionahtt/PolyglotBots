@@ -3,7 +3,7 @@ stanza.download('en',logging_level='WARN')
 
 
 class DocumentParser:
-    nlp = stanza.Pipeline(lang='en', processors='tokenize,mwt,pos,lemma,depparse,constituency', verbose=False)
+    nlp = stanza.Pipeline(lang='en', processors='tokenize,mwt,pos,lemma,depparse,constituency,ner', verbose=False)
 
     def __init__(self, text):
         self.text = text

@@ -19,9 +19,98 @@ def load_text(filename):
 # if possible return question, if not return None
 
 
-# fiona
+"""
+NER may not work for some names of people,
+but ultimately works better than other processors 
+that only can point out proper nouns
+(for "who" we want a person)
+
+Only want a proper noun person for a "good" question 
+(can't answer with "her" for a question)
+"""
+
+"""
+Verb [VP] formats:
+
+verb_tenses
+verb_tenses + [something] ([VP], [NP], etc)
+"""
+
+"""
+Sentence formats: simple predicate ([NP] + [VP])
+
+Some limitations: "The best person is Lauren" -> "Who is Lauren?"
+But not "Who is the best person?"
+
+Doesn't cover verb + infinitive (want to ___, likes to ___)
+Doesn't cover linking verbs (would ___, could ___, could have ___) -> [MD] + [VP]
+"""
+
+"""
+Question format: Who + singular form of [VP]
+-done by taking all children of [VP] and making sure it's in singular form
+"""
+
+"""
+TO DO:
+singular form of [VP]
+fix why has swum doesnt work with i like to eat pie
+"""
+
+def get_children(pt):
+    phrase = ""
+    for elem in pt:
+        if elem.children == ():
+            phrase += elem.label + " "
+        else:
+            phrase += get_children(elem.children)
+    return phrase
+
 def who(sentence):
-    return
+    question = "Who "
+    has_person = False
+
+    #check if sentence has a proper noun person
+    for ent in sentence.entities:
+        if ent.type == "PERSON":
+            has_person = True
+    if not has_person:
+        return None
+
+    verb_tenses = ["VBZ", "VBD", "VBP"]
+
+    # check sentence format 
+    possible_np = sentence.constituency.children[0].children[0].label
+    possible_vp = sentence.constituency.children[0].children[1].label
+    possible_period = sentence.constituency.children[0].children[2].label
+
+    if possible_np != "NP" or possible_vp != "VP" or possible_period != ".":
+        return None
+
+    #check verb formats of [VP]
+    vp = sentence.constituency.children[0].children[1].children
+    #if len(vp) == 1:
+    if vp[0].label not in verb_tenses:
+        return None
+
+    #get entire [VP]
+    verb_phrase = get_children(vp)[:-1]
+    first_verb = verb_phrase.split()[0]
+    
+    return question + verb_phrase + "?"
+
+    """
+    if len(vp) == 2:
+        if vp[0].label not in verb_tenses:
+            return None
+        else:
+            if vp[1].label not in following_word:
+                return None
+            else:
+                return question + get_children(vp[1].children) + " ?"
+
+    return None
+    """
 
 # seth
 
@@ -29,7 +118,7 @@ def who(sentence):
 def what(sentence):
     return
 
-# seth
+# fiona
 
 
 def when(sentence):
@@ -167,16 +256,19 @@ if __name__ == "__main__":
 
     for i, sentence in enumerate(parser.sentences):
         try:
-            question = howmany(sentence)
-            questions.append(question)
+            #print(who(sentence))
+            who_question = who(sentence)
+            howmany_question = None #howmany(sentence)
+            if (who_question != None):
+                questions.append(who_question)
+            if (howmany_question != None):
+                questions.append(howmany_question)
         except TypeError:
             pass
 
     for i in range(N):
         if (i < len(questions)):
             print(questions[i])
-        else:
-            print('Q'+str(i+1))
 
 # load_text("text/pie.txt")
 
