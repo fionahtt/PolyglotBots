@@ -42,8 +42,6 @@ But not "Who is the best person?"
 
 Grammar limitations: "The Johnsons like to swim" -> "Who like to swim?"
 Supposed to be "Who likes to swim?" (present tense supposed to have singular verb form)
-
-Space before comma/other punctuations in questions
 ____________
 
 Question format: Who + singular form of [VP] (past and present)
@@ -55,23 +53,32 @@ Covers modal verbs (would ___, could ___, could have ___) -> [MD] + [VP]
 
 """
 TO DO:
-get rid of space before punctuation
-singular form of [VP]
-fix bug: constituency parse takes different sentence than actual sentence
+CONSTITUENCY PARSING ISSUES (constituency parse takes different sentence than actual sentence)
+"""
+
+"""
+small grammar error with get_children:
+-sometimes "3-0" becomes "3- 0"
 """
 
 def get_children(pt):
     phrase = ""
     for elem in pt:
         if elem.children == ():
-            phrase += elem.label + " "
+            first = elem.label[0]
+            if elem.label == ",":
+                phrase += elem.label
+            elif first == "'" or first == "-":
+                phrase += elem.label
+            else:
+                phrase += " " + elem.label
         else:
             phrase += get_children(elem.children)
     return phrase
 
 #fiona
 def who(sentence):
-    question = "Who "
+    question = "Who"
     has_person = False
     person = ""
 
@@ -110,7 +117,7 @@ def who(sentence):
         return None
 
     #get entire [VP]
-    verb_phrase = get_children(vp)[:-1] #remove last space
+    verb_phrase = get_children(vp)
 
     #make first verb 
     first_verb = verb_phrase.split()[0]
@@ -153,13 +160,12 @@ Cannot process sentence with modal verb [MD] form, or be/have + participle ([VBN
 
 """
 CONSTIUENCY PARSING ISSUES
-
 [PP] in [VP] format
 """
 
 # fiona
 def when(sentence):
-    question = "When "
+    question = "When"
     has_date = False
     dates = [] #keep track of dates in sentence to check if [PP] has one
     #check if sentence has a date entity
@@ -171,7 +177,7 @@ def when(sentence):
         return None
 
     #verb tense of [VP] matching to do/does/did
-    tense_matching  = {"VBD": "did ", "VBP": "do ", "VBZ": "does "}
+    tense_matching  = {"VBD": " did", "VBP": " do", "VBZ": " does"}
     verb_tenses = ["VBD", "VBP", "VBZ"]
 
     # check sentence format 
@@ -244,12 +250,12 @@ def when(sentence):
 
         np_phrase = get_children(np)
         vp_phrase = get_children(vp)
-        wo_first_verb = vp_phrase.split(' ', 1)[1][:-1] #remove last space
+        wo_first_verb = " " + vp_phrase.split(' ', 2)[2]
 
         if switch_order:
-            return question + first_verb + " " + np_phrase + wo_first_verb + "?"
+            return question + " " + first_verb + np_phrase + wo_first_verb + "?"
         else:
-            return question + do_tense + np_phrase + first_verb_lemma + " " + wo_first_verb + "?"
+            return question + do_tense + np_phrase + " " + first_verb_lemma + wo_first_verb + "?"
 
     #check DATE in [PP] in [VP]
     #else:
@@ -384,19 +390,21 @@ if __name__ == "__main__":
     questions = []
 
     for sentence in parser.sentences:
-        print(sentence.text)
-        print(sentence.constituency)
+        #print(sentence.text)
+        #print(sentence.constituency)
+        print(when(sentence))
 
+        #who_question = who(sentence)
+        #howmany_question = howmany(sentence)
+        #when_question = when(sentence)
         """
-        who_question = who(sentence)
-        howmany_question = howmany(sentence)
-        when_question = when(sentence)
         if (who_question != None):
             questions.append(who_question)
         if (howmany_question != None):
             questions.append(howmany_question)
         if (when_question != None):
             questions.append(when_question)
+        
         """
 
     for i in range(N):
