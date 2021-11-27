@@ -52,11 +52,6 @@ Covers modal verbs (would ___, could ___, could have ___) -> [MD] + [VP]
 """
 
 """
-TO DO:
-CONSTITUENCY PARSING ISSUES (constituency parse takes different sentence than actual sentence)
-"""
-
-"""
 small grammar error with get_children:
 -sometimes "3-0" becomes "3- 0"
 """
@@ -159,7 +154,7 @@ Cannot process sentence with modal verb [MD] form, or be/have + participle ([VBN
 """
 
 """
-CONSTIUENCY PARSING ISSUES
+check for proper noun in np
 [PP] in [VP] format
 """
 
@@ -237,9 +232,6 @@ def when(sentence):
         # as separate words
         for w in sentence.words:
             sentence_text.append(w.text)
-        print(sentence)
-        print(sentence_text)
-        print(first_verb)
         first_verb_ind = sentence_text.index(first_verb)
         first_verb_word = sentence.words[first_verb_ind]
 
@@ -392,20 +384,19 @@ if __name__ == "__main__":
     for sentence in parser.sentences:
         #print(sentence.text)
         #print(sentence.constituency)
-        print(when(sentence))
 
         #who_question = who(sentence)
         #howmany_question = howmany(sentence)
-        #when_question = when(sentence)
+        when_question = when(sentence)
         """
         if (who_question != None):
             questions.append(who_question)
         if (howmany_question != None):
             questions.append(howmany_question)
+        """
+
         if (when_question != None):
             questions.append(when_question)
-        
-        """
 
     for i in range(N):
         if (i < len(questions)):

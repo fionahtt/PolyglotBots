@@ -1,6 +1,12 @@
 import stanza
-stanza.download('en',logging_level='WARN')
+stanza.download('en')
 
+"""
+Notes:
+using recent dev version of Stanza (contains fixes for constituency parsing issues)
+-had issues before where constituency parsing took different sentence in document
+than current sentence
+"""
 
 class DocumentParser:
     nlp = stanza.Pipeline(lang='en', processors='tokenize,mwt,pos,lemma,depparse,constituency,ner', verbose=False)
