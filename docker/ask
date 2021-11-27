@@ -71,6 +71,8 @@ def get_children(pt):
             phrase += get_children(elem.children)
     return phrase
 
+
+
 #fiona
 def who(sentence):
     question = "Who"
@@ -154,9 +156,27 @@ Cannot process sentence with modal verb [MD] form, or be/have + participle ([VBN
 """
 
 """
-check for proper noun in np
+TO DO:
 [PP] in [VP] format
 """
+
+"""
+check that there's a proper noun in a phrase
+used to check whether there's proper noun in NP (good question)
+
+Limitations: returns true if there's any NNP in the phrase
+when checking for NNP in [NP] it doesn't always work
+"He, as the president of the USA, went to the beach."
+-> True because "USA" is considered NNP but would be bad question b/c don't know who "he" is
+"""
+
+# List[ParseTree] -> bool
+def check_NNP(pt):
+    for elem in pt:
+        if elem.children[0].children == ():
+            if elem.label == "NNP":
+                return True
+    return False
 
 # fiona
 def when(sentence):
@@ -205,6 +225,10 @@ def when(sentence):
         pp = sentence.constituency.children[0].children[0].children
         np = sentence.constituency.children[0].children[2].children
         vp = sentence.constituency.children[0].children[3].children
+
+        #check proper noun (NNP) in noun phrase
+        if not check_NNP(np):
+            return None
 
         #check DATE in [PP]
         pp_phrase = get_children(pp)
