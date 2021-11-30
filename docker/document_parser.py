@@ -6,6 +6,8 @@ Notes:
 using recent dev version of Stanza (contains fixes for constituency parsing issues)
 -had issues before where constituency parsing took different sentence in document
 than current sentence
+
+pip install git+https://github.com/stanfordnlp/stanza.git@dev
 """
 
 class DocumentParser:
