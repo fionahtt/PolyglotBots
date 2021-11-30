@@ -16,42 +16,6 @@ def load_text(filename):
 # if possible return question, if not return None
 
 """
-NER may not work for some names of people,
-but ultimately works better than other processors 
-that only can point out proper nouns
-(for "who" we want a person)
-
-Only want a proper noun person for a "good" question 
-(can't answer with "her" for a question)
-
-Only takes in sentences with proper noun in [NP]
-
-________________
-
-Verb [VP] formats:
-
-verb_tenses
-verb_tenses + [something] ([VP], [NP], etc)
-
-________________
-
-Sentence formats: simple predicate ([NP] + [VP])
-
-Some limitations: "The best person is Lauren" -> "Who is Lauren?"
-But not "Who is the best person?"
-
-Grammar limitations: "The Johnsons like to swim" -> "Who like to swim?"
-Supposed to be "Who likes to swim?" (present tense supposed to have singular verb form)
-____________
-
-Question format: Who + singular form of [VP] (past and present)
--done by taking all children of [VP] and making sure it's in singular form
-
-Covers verb + infinitive (want to ___, likes to ___)
-Covers modal verbs (would ___, could ___, could have ___) -> [MD] + [VP]
-"""
-
-"""
 small grammar error with get_children:
 -sometimes "3-0" becomes "3- 0"
 """
@@ -71,7 +35,46 @@ def get_children(pt):
             phrase += get_children(elem.children)
     return phrase
 
+"""
+NER may not work for some names of people,
+but ultimately works better than other processors 
+that only can point out proper nouns
+(for "who" we want a person)
 
+Only want a proper noun person for a "good" question 
+(can't answer with "her" for a question)
+
+Only takes in sentences with proper noun in [NP]
+
+________________
+
+Verb [VP] formats:
+
+verb_tenses
+verb_tenses + [something] ([VP], [NP], etc)
+
+________________
+
+Limitations:
+
+"The best person is Lauren" -> "Who is Lauren?"
+But not "Who is the best person?"
+
+NER may not recognize name of person as name, or may classify something that is not a name
+as a name
+
+Grammar limitations: "The Johnsons like to swim" -> "Who like to swim?"
+Supposed to be "Who likes to swim?" (present tense supposed to have singular verb form)
+____________
+
+Sentence formats: simple predicate ([NP] + [VP])
+
+Question format: Who + singular form of [VP] (past and present)
+-done by taking all children of [VP] and making sure it's in singular form
+
+Covers verb + infinitive (want to ___, likes to ___)
+Covers modal verbs (would ___, could ___, could have ___) -> [MD] + [VP]
+"""
 
 #fiona
 def who(sentence):
@@ -126,6 +129,26 @@ def what(sentence):
     return
 
 """
+check that there's a proper noun in a phrase
+used to check whether there's proper noun in NP (good question)
+
+Limitations: returns true if there's any NNP in the phrase
+when checking for NNP in [NP] it doesn't always work
+"He, as the president of the USA, went to the beach."
+-> True because "USA" is considered NNP but would be bad question b/c don't know who "he" is
+
+(issue for all question templates, including who)
+"""
+
+# List[ParseTree] -> bool
+def check_NNP(pt):
+    for elem in pt:
+        if elem.children[0].children == ():
+            if elem.label == "NNP":
+                return True
+    return False
+
+"""
 Sentence format:
 
 Form 1: [PP] with DATE + [NP] + [VP]
@@ -147,36 +170,7 @@ _________
 Limitations:
 Limited to sentences with format above
 For a sentence with both forms, the question will ask about the date in the first [PP]
-Cannot process sentence with modal verb [MD] form, or be/have + participle ([VBN/VBG])
--On Monday, he should go to work => When should he go to work?
- currently: "When did/does/do he should go to work?"
--On Monday, he had gone to work => When had he gone to work?
- currently: "When did/does/do he had gone to work?"
-
 """
-
-"""
-TO DO:
-[PP] in [VP] format
-"""
-
-"""
-check that there's a proper noun in a phrase
-used to check whether there's proper noun in NP (good question)
-
-Limitations: returns true if there's any NNP in the phrase
-when checking for NNP in [NP] it doesn't always work
-"He, as the president of the USA, went to the beach."
--> True because "USA" is considered NNP but would be bad question b/c don't know who "he" is
-"""
-
-# List[ParseTree] -> bool
-def check_NNP(pt):
-    for elem in pt:
-        if elem.children[0].children == ():
-            if elem.label == "NNP":
-                return True
-    return False
 
 # fiona
 def when(sentence):
@@ -207,8 +201,8 @@ def when(sentence):
         else:
             # [NP] + [VP] + [.] form (w/o period)
             possible_vp = sentence.constituency.children[0].children[1].label
-            #possible_period = sentence.constituency.children[0].children[2].label
-            if possible_vp != "VP": # or possible_period != ".":
+            possible_period = sentence.constituency.children[0].children[2].label
+            if possible_vp != "VP" or possible_period != ".":
                 return None
     else:
         # [PP] + [,] + [NP] + [VP] + [.] form (w/o period)
@@ -241,10 +235,10 @@ def when(sentence):
         # get tense of do
         vp_tense = vp[0].label
         switch_order = False # if [MD] or be/have + participle ([VBN/VBG])
-        if vp_tense not in verb_tenses:
-            return None
-        elif vp_tense == "MD":
+        if vp_tense == "MD":
             switch_order = True
+        elif vp_tense not in verb_tenses:
+            return None
         else:
             do_tense = tense_matching[vp_tense]
 
@@ -274,7 +268,6 @@ def when(sentence):
 
     #check DATE in [PP] in [VP]
     #else:
-
 
     return None
 
@@ -402,6 +395,7 @@ if __name__ == "__main__":
     input_file = sys.argv[1]
     N = int(sys.argv[2])
     parser = load_text(input_file)
+    #get parser.sentences with appositions
     questions = []
 
     for sentence in parser.sentences:
@@ -409,56 +403,24 @@ if __name__ == "__main__":
         #print(sentence.constituency)
 
         who_question = who(sentence)
-        howmany_question = howmany(sentence)
-        yesno_question = yesno(sentence)
+        #howmany_question = howmany(sentence)
+        #yesno_question = yesno(sentence)
         when_question = when(sentence)
 
         if (who_question != None):
             questions.append(who_question)
+
+        """
         if (howmany_question != None):
             questions.append(howmany_question)
         if (yesno_question != None):
             questions.append(yesno_question)
+        """
         if (when_question != None):
             questions.append(when_question)
 
     for i in range(N):
         if (i < len(questions)):
             print(questions[i])
-
-# load_text("text/pie.txt")
-
-
-# howmany1 = nlp('Five dogs walk.')
-# howmany2 = nlp('He has five kids at the house.')
-# howmany3 = nlp('There are 7 apples.')
-# howmany4 = nlp('The tall trees laying in the sun have 6 apples.')
-# howmany5 = nlp('it remains one of the 88 modern constellations today.')
-# howmany6 = nlp('They have 3 cats.')
-# howmany7 = nlp('Harriet is walking 3 dogs.')
-# howmany8 = nlp('You swim 6 miles.')
-# howmany9 = nlp('The tall trees which they were climbing had 6 apples.')
-# howmany10 = nlp('The tall tree covered in spiders had 6 apples.')
-
-
-# print(howmany(howmany1.sentences[0]))
-# print(howmany(howmany2.sentences[0]))
-# print(howmany(howmany3.sentences[0]))
-# print(howmany(howmany4.sentences[0]))
-# print(howmany(howmany5.sentences[0]))
-# print(howmany(howmany6.sentences[0]))
-# print(howmany(howmany7.sentences[0]))
-# print(howmany(howmany8.sentences[0]))
-# print(howmany(howmany9.sentences[0]))
-# print(howmany(howmany10.sentences[0]))
-# print(yesno(howmany1.sentences[0]))
-# print(yesno(howmany2.sentences[0]))
-# print(yesno(howmany3.sentences[0]))
-# print(yesno(howmany4.sentences[0]))
-# print(yesno(howmany5.sentences[0]))
-# print(yesno(howmany6.sentences[0]))
-# print(yesno(howmany7.sentences[0]))
-# print(yesno(howmany8.sentences[0]))
-# print(yesno(howmany9.sentences[0]))
-# print(yesno(howmany10.sentences[0]))
-
+        else:
+            print("Question Limit Exceeded")
