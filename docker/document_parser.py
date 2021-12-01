@@ -1,10 +1,18 @@
 import stanza
 import re
+stanza.download('en')
 
+"""
+Notes:
+using recent dev version of Stanza (contains fixes for constituency parsing issues)
+-had issues before where constituency parsing took different sentence in document
+than current sentence
+pip install git+https://github.com/stanfordnlp/stanza.git@dev
+"""
 
 class DocumentParser:
     nlp = stanza.Pipeline(
-        lang='en', processors='tokenize,mwt,pos,lemma,depparse,constituency', verbose=False)
+        lang='en', processors='tokenize,mwt,pos,lemma,depparse,constituency, ner', verbose=False)
 
     def __init__(self, text):
         def pre_process(text):
@@ -67,6 +75,7 @@ class DocumentParser:
         self.text = pre_process(text)
         self.doc = self.nlp(self.text)
         self.sentences = self.doc.sentences
+
         for sentence in self.sentences:
             appos_sentence = find_appositions(sentence)
             if appos_sentence != None:
