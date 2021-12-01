@@ -25,4 +25,3 @@ class DocumentParser:
                 print(
                     f'word: {word.text}\tupos: {word.upos}\txpos: {word.xpos}\tfeats: {word.feats if word.feats else "_"}')
             print("\n")
-
