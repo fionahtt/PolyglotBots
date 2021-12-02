@@ -1,5 +1,5 @@
-Hello my name is bob.
-The cat is red.
-Bob killed the cat.
+The capital of america is washington.
+washington is the capital of america.
 The brightest star in Gemini is Pollux.
-Bob ate five cats.
+Pollux is the brightest star in Gemini.
+The dog bites the hamster.
