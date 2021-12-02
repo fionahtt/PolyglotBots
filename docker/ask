@@ -75,7 +75,10 @@ Question format: Who + singular form of [VP] (past and present)
 Covers verb + infinitive (want to ___, likes to ___)
 Covers modal verbs (would ___, could ___, could have ___) -> [MD] + [VP]
 """
-
+# seth
+def what(sentence):
+    return
+    
 #fiona
 def who(sentence):
     question = "Who"
@@ -124,9 +127,7 @@ def who(sentence):
     
     return question + verb_phrase + "?"
 
-# seth
-def what(sentence):
-    return
+
 
 """
 check that there's a proper noun in a phrase
@@ -372,7 +373,7 @@ def auxilary_verb_flip(subject, verb):
     aux_verbs = ['be', 'have', 'can', 'could', 'will', 'would', 'do']
     aux_verb = None
     flipped_aux_phrase = ''
-    if subject[len(subject) - 1].lemma in aux_verbs:
+    if len(subject) > 0 and subject[len(subject) - 1].lemma in aux_verbs:
         aux_verb = subject[len(subject) - 1]
         flipped_aux_phrase = flipped_aux_phrase + aux_verb.text.lower() + ' '
         for word in subject[0:len(subject) - 1]:
@@ -421,6 +422,9 @@ def expl_does_question_phrase(subject, predicate, verb):
             flipped_verb_phrase = flipped_verb_phrase + word.text.lower() + " "
 
         flipped_verb_phrase += verb.lemma
+        print("lemma ")
+        print(verb)
+    print(flipped_verb_phrase)
     return flipped_verb_phrase
 
 
@@ -473,8 +477,8 @@ if __name__ == "__main__":
             questions.append(who_question)
         if (howmany_question != None):
             questions.append(howmany_question)
-        if (yesno_question != None):
-            questions.append(yesno_question)
+        # if (yesno_question != None):
+        #     questions.append(yesno_question)
         if (when_question != None):
             questions.append(when_question)
 
