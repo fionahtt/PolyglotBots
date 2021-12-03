@@ -84,9 +84,76 @@ Covers verb + infinitive (want to ___, likes to ___)
 Covers modal verbs (would ___, could ___, could have ___) -> [MD] + [VP]
 """
 
-# fiona
+def checkValidWhatSentence(sentence):
+    # WE not Rockin with people
+    for ent in sentence.entities:
+        if ent.type == "PERSON":
+            return False
 
+    if len(sentence.constituency.children[0].children) < 3:
+        return False
 
+    possible_np = sentence.constituency.children[0].children[0].label
+    possible_vp = sentence.constituency.children[0].children[1].label
+    #possible_period = sentence.constituency.children[0].children[2].label
+
+    if possible_np != "NP" or possible_vp != "VP": #or possible_period != ".":
+        return False
+
+    return True
+
+def getVerbPhrase(sentence):
+    vp = sentence.constituency.children[0].children[1].children
+    verb_phrase = get_children(vp)
+    return verb_phrase
+
+def getNounPhrase(sentence):
+    vp = sentence.constituency.children[0].children[0].children
+    verb_phrase = get_children(vp)
+    return verb_phrase
+
+def handleIfSentence(sentence):
+    return None
+
+def checkNPPP(phrase):
+    print(phrase)
+    return (len(phrase) == 2 and phrase[0].label == "NP" and phrase[1].label == "PP")
+
+def getIsEndPhrase(np, vp):
+    if checkNPPP(np):
+        return get_children(np).strip()
+    elif checkNPPP(vp[1].children):
+        #Remove the word is
+        return get_children(vp).strip()[3:]
+    return None
+
+# seth
+def what(sentence):
+    try:
+        question_head = "What"
+
+        if not checkValidWhatSentence(sentence):
+            return None
+
+        constParse = sentence.constituency.children[0]
+        mainVerb = constParse.children[1].children[0].children[0].label
+
+        if mainVerb == 'is':
+            #Check if we should use the Noun Phrase or Verb Phrase for this question
+            endPhrase = getIsEndPhrase(sentence.constituency.children[0].children[0].children,sentence.constituency.children[0].children[1].children)
+            if (endPhrase == None):
+                return None
+            else:
+                endPhrase = endPhrase[0].lower() + endPhrase[1:]
+            return f"What is {endPhrase}?"
+
+        
+        return None
+    except IndexError as e:
+        return None
+        pass
+
+#fiona
 def who(sentence):
     question = "Who"
     has_person = False
@@ -134,11 +201,6 @@ def who(sentence):
 
     return question + verb_phrase + "?"
 
-# seth
-
-
-def what(sentence):
-    return
 
 
 """
@@ -394,7 +456,7 @@ def auxilary_verb_flip(subject, verb):
     aux_verbs = ['be', 'have', 'can', 'could', 'will', 'would', 'do']
     aux_verb = None
     flipped_aux_phrase = ''
-    if subject[len(subject) - 1].lemma in aux_verbs:
+    if len(subject) > 0 and subject[len(subject) - 1].lemma in aux_verbs:
         aux_verb = subject[len(subject) - 1]
         flipped_aux_phrase = flipped_aux_phrase + aux_verb.text.lower() + ' '
         for word in subject[0:len(subject) - 1]:
@@ -489,23 +551,23 @@ if __name__ == "__main__":
     questions = []
 
     for sentence in parser.sentences:
-        print(sentence.text)
 
         who_question = who(sentence)
-        #howmany_question = howmany(sentence)
-        #yesno_question = yesno(sentence)
-        #when_question = when(sentence)
+        what_question = what(sentence)
+        howmany_question = howmany(sentence)
+        yesno_question = yesno(sentence)
+        when_question = when(sentence)
 
         if (who_question != None):
             questions.append(who_question)
-        """
         if (howmany_question != None):
             questions.append(howmany_question)
+        if (what_question != None):
+            questions.append(what_question)
         if (yesno_question != None):
             questions.append(yesno_question)
         if (when_question != None):
             questions.append(when_question)
-        """
 
     for i in range(N):
         if (i < len(questions)):
