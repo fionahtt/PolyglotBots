@@ -465,23 +465,20 @@ if __name__ == "__main__":
     questions = []
 
     for sentence in parser.sentences:
-        print(sentence.text)
 
         who_question = who(sentence)
-        #howmany_question = howmany(sentence)
-        #yesno_question = yesno(sentence)
-        #when_question = when(sentence)
+        howmany_question = howmany(sentence)
+        yesno_question = yesno(sentence)
+        when_question = when(sentence)
 
         if (who_question != None):
             questions.append(who_question)
-        """
         if (howmany_question != None):
             questions.append(howmany_question)
         if (yesno_question != None):
             questions.append(yesno_question)
         if (when_question != None):
             questions.append(when_question)
-        """
 
     for i in range(N):
         if (i < len(questions)):
