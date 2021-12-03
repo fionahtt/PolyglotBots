@@ -1,3 +1,14 @@
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+Ralph Lauren swims 6 miles.
+The president of the United States, Lauren, has swum ten miles. 
+The president of the United States, Lauren, swims ten miles.
+Lauren, the caregiver to the apple trees, swims ten miles.
+The best person is Lauren.
+I like to eat pie.
+=======
+>>>>>>> Stashed changes
 kangaroo
 
 :For other uses, see kangaroo (disambiguation).
@@ -317,3 +328,7 @@ Kangaroo court
 Boxing Kangaroo
 Kangaroo emblems and popular culture
 Australian National University
+<<<<<<< Updated upstream
+=======
+>>>>>>> rahjshiba
+>>>>>>> Stashed changes

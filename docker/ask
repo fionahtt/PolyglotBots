@@ -434,9 +434,6 @@ if __name__ == "__main__":
     questions = []
 
     for sentence in parser.sentences:
-        if(is_simple_predicate(sentence)):
-
-            print(sentence.text)
         who_question = who(sentence)
         howmany_question = howmany(sentence)
         yesno_question = yesno(sentence)
