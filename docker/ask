@@ -15,6 +15,22 @@ def load_text(filename):
 
 # if possible return question, if not return None
 
+def is_simple_predicate(sentence):
+        tree = sentence.constituency
+        # Check to make sure node is a sentence
+        if(tree.children[0].label != 'S'):
+            print("Not a sentence")
+            return False
+        tree_labels = tree.children[0].children
+        correct_labels = ['NP', 'VP', '.']
+        # check to make sure sentence node only has 3 children
+        if (len(tree_labels) != 3):
+            return False
+        for i in range(3):
+            if tree_labels[i].label != correct_labels[i]:
+                return False
+        return True
+
 """
 small grammar error with get_children:
 -sometimes "3-0" becomes "3- 0"
@@ -40,38 +56,25 @@ NER may not work for some names of people,
 but ultimately works better than other processors 
 that only can point out proper nouns
 (for "who" we want a person)
-
 Only want a proper noun person for a "good" question 
 (can't answer with "her" for a question)
-
 Only takes in sentences with proper noun in [NP]
-
 ________________
-
 Verb [VP] formats:
-
 verb_tenses
 verb_tenses + [something] ([VP], [NP], etc)
-
 ________________
-
 Limitations:
-
 Does not ask questions about sentences with person in verb phrase
 - "The best person is Lauren" 
-
 NER may not recognize name of person as name, or may classify something that is not a name
 as a name
-
 Grammar limitations: "The Johnsons like to swim" -> "Who like to swim?"
 Supposed to be "Who likes to swim?" (present tense supposed to have singular verb form)
 ____________
-
 Sentence formats: simple predicate ([NP] + [VP])
-
 Question format: Who + singular form of [VP] (past and present)
 -done by taking all children of [VP] and making sure it's in singular form
-
 Covers verb + infinitive (want to ___, likes to ___)
 Covers modal verbs (would ___, could ___, could have ___) -> [MD] + [VP]
 """
@@ -131,12 +134,10 @@ def what(sentence):
 """
 check that there's a proper noun in a phrase
 used to check whether there's proper noun in NP (good question)
-
 Limitations: returns true if there's any NNP in the phrase
 when checking for NNP in [NP] it doesn't always work
 "He, as the president of the USA, went to the beach."
 -> True because "USA" is considered NNP but would be bad question b/c don't know who "he" is
-
 (issue for all question templates, including who)
 """
 
@@ -190,23 +191,18 @@ def construct_question(np, vp, switch_order, do_tense, first_verb_lemma):
 
 """
 Sentence format:
-
 Form 1: [PP] with DATE + [NP] + [VP]
 Form 2: [NP] + [VP] with [PP] with DATE
-
 _________
 Question format:
-
 When did/does/do [NP] + [VP] (w/o [PP] with DATE if Form 2) (lemma form of verb)
 -VBD => did
 -VBP => do
 -VBZ => does
 _________
-
 We only consider dates within a [PP] because:
 -something like "60 years" is classified as date -> could be age
 _________
-
 Limitations:
 Limited to sentences with format above
 For a sentence with both forms, the question will ask about the date in the first [PP]
@@ -337,6 +333,9 @@ def when(sentence):
 
 # rahjshiba
 def howmany(sentence):
+
+    if not is_simple_predicate(sentence):
+        return None
     question = "How many"
     nsubj_head = 0
     for word in sentence.words:
@@ -437,6 +436,9 @@ def is_howmany(subject, predicate):
 
 # rahjshiba
 def yesno(sentence):
+    if not is_simple_predicate(sentence):
+        return None
+        
     nsubj_head = 0
     for word in sentence.words:
         if word.head == 0:
@@ -486,3 +488,4 @@ if __name__ == "__main__":
             print(questions[i])
         else:
             print("Question Limit Exceeded")
+            

@@ -75,6 +75,10 @@ class DocumentParser:
         self.text = pre_process(text)
         self.doc = self.nlp(self.text)
         self.sentences = self.doc.sentences
+        for sentence in self.sentences:
+            appos_sentence = find_appositions(sentence)
+            if appos_sentence != None:
+                self.sentences.append(appos_sentence)
 
         for sentence in self.sentences:
             appos_sentence = find_appositions(sentence)
