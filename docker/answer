@@ -4,14 +4,37 @@ import sys
 import spacy
 import re
 import codecs
+from document_parser import DocumentParser
 
+def load_text(filename):
+    with open(filename) as textFile:
+        text = textFile.read()
+        parser = DocumentParser(text)
+        return parser
+
+#return empty string if no answer
+def answer(sentence):
+    return
 
 if __name__ == "__main__":
     input_file = sys.argv[1]
     question_file = sys.argv[2]
+    article = load_text(input_file)
+    questions = load_text(question_file)
+    answers = []
 
+    #add empty string to answers if not able to answer question (blank line)
+    for q in questions.sentences:
+        ans = answer(q)
+        answers.append(ans)
+
+    for a in answers:
+        print(a)
+
+    """
     with open(question_file, 'r') as f:
         count = 0
         for line in f:
             count += 1
             print('A'+str(count))
+    """

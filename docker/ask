@@ -7,54 +7,29 @@ import codecs
 import stanza
 from document_parser import DocumentParser
 
-nlp = stanza.Pipeline(
-        lang='en', processors='tokenize,mwt,pos,lemma,depparse,constituency', verbose=False)
-
 def load_text(filename):
     with open(filename) as textFile:
         text = textFile.read()
         parser = DocumentParser(text)
         return parser
 
-
-
 # if possible return question, if not return None
 
-"""
-NER may not work for some names of people,
-but ultimately works better than other processors 
-that only can point out proper nouns
-(for "who" we want a person)
-
-Only want a proper noun person for a "good" question 
-(can't answer with "her" for a question)
-
-Only takes in sentences with proper noun in [NP]
-
-________________
-
-Verb [VP] formats:
-
-verb_tenses
-verb_tenses + [something] ([VP], [NP], etc)
-
-________________
-
-Sentence formats: simple predicate ([NP] + [VP])
-
-Some limitations: "The best person is Lauren" -> "Who is Lauren?"
-But not "Who is the best person?"
-
-Grammar limitations: "The Johnsons like to swim" -> "Who like to swim?"
-Supposed to be "Who likes to swim?" (present tense supposed to have singular verb form)
-____________
-
-Question format: Who + singular form of [VP] (past and present)
--done by taking all children of [VP] and making sure it's in singular form
-
-Covers verb + infinitive (want to ___, likes to ___)
-Covers modal verbs (would ___, could ___, could have ___) -> [MD] + [VP]
-"""
+def is_simple_predicate(sentence):
+        tree = sentence.constituency
+        # Check to make sure node is a sentence
+        if(tree.children[0].label != 'S'):
+            print("Not a sentence")
+            return False
+        tree_labels = tree.children[0].children
+        correct_labels = ['NP', 'VP', '.']
+        # check to make sure sentence node only has 3 children
+        if (len(tree_labels) != 3):
+            return False
+        for i in range(3):
+            if tree_labels[i].label != correct_labels[i]:
+                return False
+        return True
 
 """
 small grammar error with get_children:
@@ -76,7 +51,33 @@ def get_children(pt):
             phrase += get_children(elem.children)
     return phrase
 
-
+"""
+NER may not work for some names of people,
+but ultimately works better than other processors 
+that only can point out proper nouns
+(for "who" we want a person)
+Only want a proper noun person for a "good" question 
+(can't answer with "her" for a question)
+Only takes in sentences with proper noun in [NP]
+________________
+Verb [VP] formats:
+verb_tenses
+verb_tenses + [something] ([VP], [NP], etc)
+________________
+Limitations:
+Does not ask questions about sentences with person in verb phrase
+- "The best person is Lauren" 
+NER may not recognize name of person as name, or may classify something that is not a name
+as a name
+Grammar limitations: "The Johnsons like to swim" -> "Who like to swim?"
+Supposed to be "Who likes to swim?" (present tense supposed to have singular verb form)
+____________
+Sentence formats: simple predicate ([NP] + [VP])
+Question format: Who + singular form of [VP] (past and present)
+-done by taking all children of [VP] and making sure it's in singular form
+Covers verb + infinitive (want to ___, likes to ___)
+Covers modal verbs (would ___, could ___, could have ___) -> [MD] + [VP]
+"""
 
 #fiona
 def who(sentence):
@@ -131,48 +132,13 @@ def what(sentence):
     return
 
 """
-Sentence format:
-
-Form 1: [PP] with DATE + [NP] + [VP]
-Form 2: [NP] + [VP] with [PP] with DATE
-
-_________
-Question format:
-
-When did/does/do [NP] + [VP] (w/o [PP] with DATE if Form 2) (lemma form of verb)
--VBD => did
--VBP => do
--VBZ => does
-_________
-
-We only consider dates within a [PP] because:
--something like "60 years" is classified as date -> could be age
-_________
-
-Limitations:
-Limited to sentences with format above
-For a sentence with both forms, the question will ask about the date in the first [PP]
-Cannot process sentence with modal verb [MD] form, or be/have + participle ([VBN/VBG])
--On Monday, he should go to work => When should he go to work?
- currently: "When did/does/do he should go to work?"
--On Monday, he had gone to work => When had he gone to work?
- currently: "When did/does/do he had gone to work?"
-
-"""
-
-"""
-TO DO:
-[PP] in [VP] format
-"""
-
-"""
 check that there's a proper noun in a phrase
 used to check whether there's proper noun in NP (good question)
-
 Limitations: returns true if there's any NNP in the phrase
 when checking for NNP in [NP] it doesn't always work
 "He, as the president of the USA, went to the beach."
 -> True because "USA" is considered NNP but would be bad question b/c don't know who "he" is
+(issue for all question templates, including who)
 """
 
 # List[ParseTree] -> bool
@@ -183,23 +149,64 @@ def check_NNP(pt):
                 return True
     return False
 
+#check that [PP] has a DATE
+def check_pp_has_date(pp_phrase, dates):
+    pp_has_date = False
+    for d in dates:
+        if d in pp_phrase:
+            pp_has_date = True
+    return pp_has_date
 
-def is_simple_predicate(sentence):
-        tree = sentence.constituency
-        # Check to make sure node is a sentence
-        if(tree.children[0].label != 'S'):
-            print("Not a sentence")
-            return False
-        tree_labels = tree.children[0].children
-        correct_labels = ['NP', 'VP', '.']
-        # check to make sure sentence node only has 3 children
-        if (len(tree_labels) != 3):
-            return False
-        for i in range(3):
-            if tree_labels[i].label != correct_labels[i]:
-                return False
-        return True
+def get_lemma(sentence, vp):
+    # get index of first verb in sentence to get in Word form
+    first_verb = vp[0].children[0].label
+    sentence_text = []
 
+    # doing this instead of sentence.text.split() because need to capture puntuaction
+    # as separate words
+    for w in sentence.words:
+        sentence_text.append(w.text)
+    first_verb_ind = sentence_text.index(first_verb)
+    first_verb_word = sentence.words[first_verb_ind]
+
+    # get lemma of first verb
+    first_verb_lemma = first_verb_word.lemma
+
+    return first_verb_lemma
+
+def construct_question(np, vp, switch_order, do_tense, first_verb_lemma):
+    first_verb = vp[0].children[0].label
+    np_phrase = get_children(np)
+    vp_phrase = get_children(vp)
+    vp_split = vp_phrase.split(' ', 2)
+    if len(vp_split) < 3:
+        wo_first_verb = ""
+    else:
+        wo_first_verb = " " + vp_split[2]
+
+    if switch_order:
+        return " " + first_verb + np_phrase + wo_first_verb + "?"
+
+    return do_tense + np_phrase + " " + first_verb_lemma + wo_first_verb + "?"
+
+"""
+Sentence format:
+Form 1: [PP] with DATE + [NP] + [VP]
+Form 2: [NP] + [VP] with [PP] with DATE
+_________
+Question format:
+When did/does/do [NP] + [VP] (w/o [PP] with DATE if Form 2) (lemma form of verb)
+-VBD => did
+-VBP => do
+-VBZ => does
+_________
+We only consider dates within a [PP] because:
+-something like "60 years" is classified as date -> could be age
+_________
+Limitations:
+Limited to sentences with format above
+For a sentence with both forms, the question will ask about the date in the first [PP]
+"""
 
 # fiona
 def when(sentence):
@@ -230,8 +237,8 @@ def when(sentence):
         else:
             # [NP] + [VP] + [.] form (w/o period)
             possible_vp = sentence.constituency.children[0].children[1].label
-            #possible_period = sentence.constituency.children[0].children[2].label
-            if possible_vp != "VP": # or possible_period != ".":
+            possible_period = sentence.constituency.children[0].children[2].label
+            if possible_vp != "VP" or possible_period != ".":
                 return None
     else:
         # [PP] + [,] + [NP] + [VP] + [.] form (w/o period)
@@ -254,50 +261,73 @@ def when(sentence):
 
         #check DATE in [PP]
         pp_phrase = get_children(pp)
-        pp_has_date = False
-        for d in dates:
-            if d in pp_phrase:
-                pp_has_date = True
+        pp_has_date = check_pp_has_date(pp_phrase, dates)
         if pp_has_date == False:
             return None
 
         # get tense of do
         vp_tense = vp[0].label
+        do_tense = ""
         switch_order = False # if [MD] or be/have + participle ([VBN/VBG])
-        if vp_tense not in verb_tenses:
-            return None
-        elif vp_tense == "MD":
+        if vp_tense == "MD":
             switch_order = True
+        elif vp_tense not in verb_tenses:
+            return None
         else:
             do_tense = tense_matching[vp_tense]
 
-         # get index of first verb in sentence to get in Word form
-        first_verb = vp[0].children[0].label
-        sentence_text = []
-        # doing this instead of sentence.text.split() because need to capture puntuaction
-        # as separate words
-        for w in sentence.words:
-            sentence_text.append(w.text)
-        first_verb_ind = sentence_text.index(first_verb)
-        first_verb_word = sentence.words[first_verb_ind]
-
-        # get lemma of first verb
-        first_verb_lemma = first_verb_word.lemma
-        if (first_verb_lemma == "be" or first_verb_lemma == "have"):
+        lemma = get_lemma(sentence, vp)
+        if (lemma == "be" or lemma == "have"):
             switch_order = True
 
-        np_phrase = get_children(np)
-        vp_phrase = get_children(vp)
-        wo_first_verb = " " + vp_phrase.split(' ', 2)[2]
+        rest_of_question = construct_question(np, vp, switch_order, do_tense, lemma)
 
-        if switch_order:
-            return question + " " + first_verb + np_phrase + wo_first_verb + "?"
+        return question + rest_of_question
+        
+    #[NP][VP] (with [PP] in last part of [VP])
+    #doesn't work with verb + infinitive
+    else:
+        np = sentence.constituency.children[0].children[0].children
+        vp = sentence.constituency.children[0].children[1].children
+
+        # get tense of do
+        vp_tense = vp[0].label
+        do_tense = ""
+        switch_order = False # if [MD] or be/have + participle ([VBN/VBG])
+        if vp_tense == "MD":
+            switch_order = True
+        elif vp_tense not in verb_tenses:
+            return None
         else:
-            return question + do_tense + np_phrase + " " + first_verb_lemma + wo_first_verb + "?"
+            do_tense = tense_matching[vp_tense]
 
-    #check DATE in [PP] in [VP]
-    #else:
+        lemma = get_lemma(sentence, vp)
+        if (lemma == "be" or lemma == "have"):
+            switch_order = True
 
+        #check last part of [VP] is [PP] (with date)
+        if switch_order:
+            if vp[1].label != "VP":
+                return None
+            if vp[1].children[-1].label != "PP":
+                return None
+            pp = vp[1].children[-1].children
+            vp = [vp[0]] + vp[1].children[:-1]
+        else:
+            if vp[-1].label != "PP":
+                return None
+            pp = vp[-1].children
+            vp = vp[:-1]
+
+        #check DATE in [PP]
+        pp_phrase = get_children(pp)
+        pp_has_date = check_pp_has_date(pp_phrase, dates)
+        if pp_has_date == False:
+            return None
+
+        rest_of_question = construct_question(np, vp, switch_order, do_tense, lemma)
+
+        return question + rest_of_question
 
     return None
 
@@ -431,29 +461,31 @@ if __name__ == "__main__":
     input_file = sys.argv[1]
     N = int(sys.argv[2])
     parser = load_text(input_file)
+    #get parser.sentences with appositions
     questions = []
 
     for sentence in parser.sentences:
+        print(sentence.text)
+
         who_question = who(sentence)
-        howmany_question = howmany(sentence)
-        yesno_question = yesno(sentence)
-        when_question = when(sentence)
+        #howmany_question = howmany(sentence)
+        #yesno_question = yesno(sentence)
+        #when_question = when(sentence)
 
         if (who_question != None):
             questions.append(who_question)
+        """
         if (howmany_question != None):
             questions.append(howmany_question)
         if (yesno_question != None):
             questions.append(yesno_question)
         if (when_question != None):
             questions.append(when_question)
+        """
 
     for i in range(N):
         if (i < len(questions)):
             print(questions[i])
-
-
-
-
-
-
+        else:
+            print("Question Limit Exceeded")
+            
