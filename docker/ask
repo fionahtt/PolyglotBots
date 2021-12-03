@@ -543,8 +543,8 @@ if __name__ == "__main__":
             questions.append(howmany_question)
         if (what_question != None):
             questions.append(what_question)
-        # if (yesno_question != None):
-        #     questions.append(yesno_question)
+        if (yesno_question != None):
+            questions.append(yesno_question)
         if (when_question != None):
             questions.append(when_question)
 
