@@ -1,0 +1,10 @@
+On Monday, Ralph goes to the mall.
+On Monday, Ralph wants to go to the mall.
+On Monday, Ralph had gone to the mall.
+On Monday, Ralph is going to the mall.
+On Monday, Ralph will go to the mall.
+On Monday, Ralph should go to the mall.
+Ralph goes to the mall on Monday.
+Ralph went to the mall on Monday.
+Ralph had gone to the mall on Monday.
+Ralph will go to the mall on Monday.
