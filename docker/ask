@@ -57,8 +57,8 @@ ________________
 
 Limitations:
 
-"The best person is Lauren" -> "Who is Lauren?"
-But not "Who is the best person?"
+Does not ask questions about sentences with person in verb phrase
+- "The best person is Lauren" 
 
 NER may not recognize name of person as name, or may classify something that is not a name
 as a name
@@ -463,20 +463,23 @@ if __name__ == "__main__":
     questions = []
 
     for sentence in parser.sentences:
+        print(sentence.text)
 
         who_question = who(sentence)
-        howmany_question = howmany(sentence)
-        yesno_question = yesno(sentence)
-        when_question = when(sentence)
+        #howmany_question = howmany(sentence)
+        #yesno_question = yesno(sentence)
+        #when_question = when(sentence)
 
         if (who_question != None):
             questions.append(who_question)
+        """
         if (howmany_question != None):
             questions.append(howmany_question)
         if (yesno_question != None):
             questions.append(yesno_question)
         if (when_question != None):
             questions.append(when_question)
+        """
 
     for i in range(N):
         if (i < len(questions)):
