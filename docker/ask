@@ -53,73 +53,22 @@ def get_children(pt):
             phrase += get_children(elem.children)
     return phrase
 
-def checkValidWhatSentence(sentence):
-    # WE not Rockin with people
-    for ent in sentence.entities:
-        if ent.type == "PERSON":
-            return False
 
-    if len(sentence.constituency.children[0].children) < 3:
-        return False
-
-    possible_np = sentence.constituency.children[0].children[0].label
-    possible_vp = sentence.constituency.children[0].children[1].label
-    #possible_period = sentence.constituency.children[0].children[2].label
-
-    if possible_np != "NP" or possible_vp != "VP": #or possible_period != ".":
-        return False
-
-    return True
-
-def getVerbPhrase(sentence):
-    vp = sentence.constituency.children[0].children[1].children
-    verb_phrase = get_children(vp)
-    return verb_phrase
-
-def getNounPhrase(sentence):
-    vp = sentence.constituency.children[0].children[0].children
-    verb_phrase = get_children(vp)
-    return verb_phrase
-
-def handleIfSentence(sentence):
-    return None
-
-def checkNPPP(phrase):
-    return (len(phrase) == 2 and phrase[0].label == "NP" and phrase[1].label == "PP")
-
-def getIsEndPhrase(np, vp):
-    if checkNPPP(np):
-        return get_children(np).strip()
-    elif checkNPPP(vp[1].children):
-        #Remove the word is
-        return get_children(vp).strip()[3:]
-    return None
-
-# seth
-def what(sentence):
-    try:
-        question_head = "What"
-
-        if not checkValidWhatSentence(sentence):
-            return None
-
-        constParse = sentence.constituency.children[0]
-        mainVerb = constParse.children[1].children[0].children[0].label
-
-        if mainVerb == 'is':
-            #Check if we should use the Noun Phrase or Verb Phrase for this question
-            endPhrase = getIsEndPhrase(sentence.constituency.children[0].children[0].children,sentence.constituency.children[0].children[1].children)
-            if (endPhrase == None):
-                return None
+def get_len_children(pt):
+    pt_len = 0
+    for elem in pt:
+        if elem.children == ():
+            first = elem.label[0]
+            if elem.label == ",":
+                pt_len += 1
+            elif first == "'" or first == "-":
+                pt_len += 1
             else:
-                endPhrase = endPhrase[0].lower() + endPhrase[1:]
-            return f"What is {endPhrase}?"
+                pt_len += 1
+        else:
+            pt_len += get_len_children(elem.children)
+    return pt_len
 
-        
-        return None
-    except IndexError as e:
-        return None
-        pass
 
 """
 NER may not work for some names of people,
@@ -135,10 +84,8 @@ verb_tenses
 verb_tenses + [something] ([VP], [NP], etc)
 ________________
 Limitations:
-May ask questions about sentence just containing a proper noun person
-He, Lauren's best friend, went to the beach -> Who went to the beach?
--not a good question
-
+Does not ask questions about sentences with person in verb phrase
+- "The best person is Lauren" 
 NER may not recognize name of person as name, or may classify something that is not a name
 as a name
 Grammar limitations: "The Johnsons like to swim" -> "Who like to swim?"
@@ -151,7 +98,85 @@ Covers verb + infinitive (want to ___, likes to ___)
 Covers modal verbs (would ___, could ___, could have ___) -> [MD] + [VP]
 """
 
-#fiona
+
+def checkValidWhatSentence(sentence):
+    # WE not Rockin with people
+    for ent in sentence.entities:
+        if ent.type == "PERSON":
+            return False
+
+    if len(sentence.constituency.children[0].children) < 3:
+        return False
+
+    possible_np = sentence.constituency.children[0].children[0].label
+    possible_vp = sentence.constituency.children[0].children[1].label
+    #possible_period = sentence.constituency.children[0].children[2].label
+
+    if possible_np != "NP" or possible_vp != "VP":  # or possible_period != ".":
+        return False
+
+    return True
+
+
+def getVerbPhrase(sentence):
+    vp = sentence.constituency.children[0].children[1].children
+    verb_phrase = get_children(vp)
+    return verb_phrase
+
+
+def getNounPhrase(sentence):
+    vp = sentence.constituency.children[0].children[0].children
+    verb_phrase = get_children(vp)
+    return verb_phrase
+
+
+def handleIfSentence(sentence):
+    return None
+
+
+def checkNPPP(phrase):
+    return (len(phrase) == 2 and phrase[0].label == "NP" and phrase[1].label == "PP")
+
+
+def getIsEndPhrase(np, vp):
+    if checkNPPP(np):
+        return get_children(np).strip()
+    elif checkNPPP(vp[1].children):
+        # Remove the word is
+        return get_children(vp).strip()[3:]
+    return None
+
+# seth
+
+
+def what(sentence):
+    try:
+        question_head = "What"
+
+        if not checkValidWhatSentence(sentence):
+            return None
+
+        constParse = sentence.constituency.children[0]
+        mainVerb = constParse.children[1].children[0].children[0].label
+
+        if mainVerb == 'is':
+            # Check if we should use the Noun Phrase or Verb Phrase for this question
+            endPhrase = getIsEndPhrase(
+                sentence.constituency.children[0].children[0].children, sentence.constituency.children[0].children[1].children)
+            if (endPhrase == None):
+                return None
+            else:
+                endPhrase = endPhrase[0].lower() + endPhrase[1:]
+            return f"What is {endPhrase}?"
+
+        return None
+    except IndexError as e:
+        return None
+        pass
+
+# fiona
+
+
 def who(sentence):
     question = "Who"
     has_person = False
@@ -198,7 +223,6 @@ def who(sentence):
     first_verb = verb_phrase.split()[0]
 
     return question + verb_phrase + "?"
-
 
 
 """
@@ -428,14 +452,14 @@ def howmany(sentence):
     if not is_simple_predicate(sentence):
         return None
     question = "How many"
-    nsubj_head = 0
-    for word in sentence.words:
-        if word.head == 0:
-            nsubj_head = word.id - 1
-            break
 
-    subject = sentence.words[0:nsubj_head]
-    predicate = sentence.words[nsubj_head:]
+    tree = sentence.constituency
+    NP_node = tree.children[0].children[0]
+    VP_node = tree.children[0].children[1]
+    root_verb_index = get_len_children(NP_node.children)
+
+    subject = sentence.words[0:root_verb_index]
+    predicate = sentence.words[root_verb_index:]
 
     (sub_nummod_i, pred_nummod_i) = is_howmany(subject, predicate)
 
@@ -449,10 +473,14 @@ def howmany(sentence):
         phrase_start = sentence.words[pred_nummod_i].head - 1
         how_many_noun = sentence.words[phrase_start]
         question = question + " " + how_many_noun.text
-        question = question + " " + \
-            expl_does_question_phrase(
-                subject, predicate, sentence.words[nsubj_head])
-        for word in sentence.words[phrase_start + 1: len(sentence.words) - 1]:
+        (expl_does_question_result, is_aux) = expl_does_question_phrase(
+            subject, predicate, sentence.words[root_verb_index])
+
+        question = question + " " + expl_does_question_result
+
+        del predicate[len(subject) - pred_nummod_i - 1]
+        del predicate[len(subject) - pred_nummod_i]
+        for word in predicate[1:len(predicate) - 1]:
             question = question + " " + word.text.lower()
     question += '?'
     return question
@@ -462,12 +490,14 @@ def auxilary_verb_flip(subject, verb):
     aux_verbs = ['be', 'have', 'can', 'could', 'will', 'would', 'do']
     aux_verb = None
     flipped_aux_phrase = ''
-    if len(subject) > 0 and subject[len(subject) - 1].lemma in aux_verbs:
-        aux_verb = subject[len(subject) - 1]
-        flipped_aux_phrase = flipped_aux_phrase + aux_verb.text.lower() + ' '
-        for word in subject[0:len(subject) - 1]:
-            flipped_aux_phrase = flipped_aux_phrase + word.text.lower() + ' '
-            flipped_aux_phrase = flipped_aux_phrase + verb.text.lower() + ' '
+    if len(subject) > 0 and verb.lemma in aux_verbs:
+        aux_verb = verb
+        flipped_aux_phrase = flipped_aux_phrase + aux_verb.text + ' '
+        start_word = (subject[0].text) if (
+            subject[0].xpos == 'NNP' or subject[0].xpos == 'NNPS') else (subject[0].text.lower())
+        flipped_aux_phrase = flipped_aux_phrase + start_word + ' '
+        for word in subject[1:len(subject)]:
+            flipped_aux_phrase = flipped_aux_phrase + word.text + ' '
         return flipped_aux_phrase
     return None
 
@@ -476,6 +506,7 @@ def expl_does_question_phrase(subject, predicate, verb):
     has_expl = None
     conjugated_do = ''
     flipped_verb_phrase = ''
+
     aux_verb_flipped_phrase = auxilary_verb_flip(subject, verb)
 
     for word in subject:
@@ -502,16 +533,19 @@ def expl_does_question_phrase(subject, predicate, verb):
             break
 
     if has_expl != None:
-        flipped_verb_phrase = verb.text.lower() + " " + has_expl.text.lower()
+        flipped_verb_phrase = verb.text + " " + has_expl.text
     elif aux_verb_flipped_phrase != None:
         flipped_verb_phrase = aux_verb_flipped_phrase
     else:
         flipped_verb_phrase = conjugated_do + " "
-        for word in subject:
-            flipped_verb_phrase = flipped_verb_phrase + word.text.lower() + " "
+        start_word = (subject[0].text) if (
+            subject[0].xpos == 'NNP' or subject[0].xpos == 'NNPS') else (subject[0].text.lower())
+        flipped_verb_phrase = flipped_verb_phrase + start_word + ' '
+        for word in subject[1:]:
+            flipped_verb_phrase = flipped_verb_phrase + word.text + " "
 
         flipped_verb_phrase += verb.lemma
-    return flipped_verb_phrase
+    return (flipped_verb_phrase, aux_verb_flipped_phrase != None)
 
 
 def is_howmany(subject, predicate):
@@ -530,23 +564,29 @@ def yesno(sentence):
     if not is_simple_predicate(sentence):
         return None
 
-    nsubj_head = 0
-    for word in sentence.words:
-        if word.head == 0:
-            nsubj_head = word.id - 1
-            break
-    subject = sentence.words[0:nsubj_head]
-    predicate = sentence.words[nsubj_head:]
-    verb = sentence.words[nsubj_head]
+    tree = sentence.constituency
+    NP_node = tree.children[0].children[0]
+    VP_node = tree.children[0].children[1]
+    root_verb_index = get_len_children(NP_node.children)
 
-    yes_no_question = expl_does_question_phrase(subject, predicate, verb) + ' '
+    subject = sentence.words[0:root_verb_index]
+    predicate = sentence.words[root_verb_index:]
+    verb = sentence.words[root_verb_index]
+
+    (expl_does_question_result, is_aux) = expl_does_question_phrase(
+        subject, predicate, sentence.words[root_verb_index])
+
+    expl_does_question_result_split = expl_does_question_result.split()
+
+    yes_no_question = expl_does_question_result_split[0].capitalize(
+    ) + ' ' + " ".join(expl_does_question_result_split[1:]) + ' '
 
     for word in predicate[1:len(predicate) - 1]:
-        yes_no_question = yes_no_question + word.text.lower() + ' '
+        yes_no_question = yes_no_question + word.text + ' '
 
     yes_no_question += '?'
 
-    return yes_no_question.capitalize()
+    return yes_no_question
 
 
 if __name__ == "__main__":
