@@ -21,7 +21,6 @@ def is_simple_predicate(sentence):
     tree = sentence.constituency
     # Check to make sure node is a sentence
     if(tree.children[0].label != 'S'):
-        print("Not a sentence")
         return False
     tree_labels = tree.children[0].children
     correct_labels = ['NP', 'VP', '.']
@@ -39,7 +38,6 @@ small grammar error with get_children:
 -sometimes "3-0" becomes "3- 0"
 """
 
-
 def get_children(pt):
     phrase = ""
     for elem in pt:
@@ -54,35 +52,6 @@ def get_children(pt):
         else:
             phrase += get_children(elem.children)
     return phrase
-
-
-"""
-NER may not work for some names of people,
-but ultimately works better than other processors 
-that only can point out proper nouns
-(for "who" we want a person)
-Only want a proper noun person for a "good" question 
-(can't answer with "her" for a question)
-Only takes in sentences with proper noun in [NP]
-________________
-Verb [VP] formats:
-verb_tenses
-verb_tenses + [something] ([VP], [NP], etc)
-________________
-Limitations:
-Does not ask questions about sentences with person in verb phrase
-- "The best person is Lauren" 
-NER may not recognize name of person as name, or may classify something that is not a name
-as a name
-Grammar limitations: "The Johnsons like to swim" -> "Who like to swim?"
-Supposed to be "Who likes to swim?" (present tense supposed to have singular verb form)
-____________
-Sentence formats: simple predicate ([NP] + [VP])
-Question format: Who + singular form of [VP] (past and present)
--done by taking all children of [VP] and making sure it's in singular form
-Covers verb + infinitive (want to ___, likes to ___)
-Covers modal verbs (would ___, could ___, could have ___) -> [MD] + [VP]
-"""
 
 def checkValidWhatSentence(sentence):
     # WE not Rockin with people
@@ -116,7 +85,6 @@ def handleIfSentence(sentence):
     return None
 
 def checkNPPP(phrase):
-    print(phrase)
     return (len(phrase) == 2 and phrase[0].label == "NP" and phrase[1].label == "PP")
 
 def getIsEndPhrase(np, vp):
@@ -153,18 +121,46 @@ def what(sentence):
         return None
         pass
 
+"""
+NER may not work for some names of people,
+but ultimately works better than other processors 
+that only can point out proper nouns
+(for "who" we want a person)
+Only want a proper noun person for a "good" question 
+(can't answer with "her" for a question)
+Only takes in sentences with proper noun in [NP]
+________________
+Verb [VP] formats:
+verb_tenses
+verb_tenses + [something] ([VP], [NP], etc)
+________________
+Limitations:
+May ask questions about sentence just containing a proper noun person
+He, Lauren's best friend, went to the beach -> Who went to the beach?
+-not a good question
+
+NER may not recognize name of person as name, or may classify something that is not a name
+as a name
+Grammar limitations: "The Johnsons like to swim" -> "Who like to swim?"
+Supposed to be "Who likes to swim?" (present tense supposed to have singular verb form)
+____________
+Sentence formats: simple predicate ([NP] + [VP])
+Question format: Who + singular form of [VP] (past and present)
+-done by taking all children of [VP] and making sure it's in singular form
+Covers verb + infinitive (want to ___, likes to ___)
+Covers modal verbs (would ___, could ___, could have ___) -> [MD] + [VP]
+"""
+
 #fiona
 def who(sentence):
     question = "Who"
     has_person = False
-    person = ""
 
     # check if sentence has a proper noun person
     # get first person mentioned in sentence (will be in [NP])
     for ent in sentence.entities:
         if ent.type == "PERSON":
             has_person = True
-            person = ent.text
             break
     if not has_person:
         return None
@@ -187,11 +183,13 @@ def who(sentence):
     if vp[0].label not in verb_tenses:
         return None
 
+    """
     # check that proper noun person is in noun phrase
     np = sentence.constituency.children[0].children[0].children
     noun_phrase = get_children(np)
     if person not in noun_phrase:
         return None
+    """
 
     # get entire [VP]
     verb_phrase = get_children(vp)
@@ -414,6 +412,14 @@ def when(sentence):
 
     return None
 
+#fiona
+def where(sentence):
+    return None
+
+#look for "because": Because...[NP][VP] or [NP][VP w because]
+def why(sentence):
+    return None
+
 # rahjshiba
 
 
@@ -569,8 +575,13 @@ if __name__ == "__main__":
         if (when_question != None):
             questions.append(when_question)
 
+    for q in questions:
+        print(q)
+
+    """
     for i in range(N):
         if (i < len(questions)):
             print(questions[i])
         else:
             print("Question Limit Exceeded")
+    """

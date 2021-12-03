@@ -6,15 +6,74 @@ import re
 import codecs
 from document_parser import DocumentParser
 
+#using medium sized Spacy model
+nlp = spacy.load("en_core_web_md")
+
 def load_text(filename):
     with open(filename) as textFile:
         text = textFile.read()
         parser = DocumentParser(text)
         return parser
 
+def who(question, sentence):
+    ans = ""
+    return ans
+
+def what(question, sentence):
+    ans = ""
+    return ans
+
+def when(question, sentence):
+    ans = ""
+    return ans
+
+def howmany(question, sentence):
+    ans = ""
+    return ans
+
+def where(question, sentence):
+    ans = ""
+    return ans
+
+def why(question, sentence):
+    ans = ""
+    return ans
+
+def yesno(question, sentence):
+    ans = ""
+    return ans
+
 #return empty string if no answer
-def answer(sentence):
-    return
+def answer(question, article):
+    ans = ""
+    max_sim = 0
+    max_sim_sentence = None
+    q = nlp(question.text)
+    for sentence in article:
+        s = nlp(sentence.text)
+        sim = q.similarity(s)
+        if sim > max_sim:
+            max_sim = sim
+            max_sim_sentence = sentence
+
+    first_two = question.words[:2]
+    first_word_lemma = first_two[0].lemma
+    if first_two[0].text == "Who":
+        ans = who(question, max_sim_sentence)
+    elif first_two[0].text == "What":
+        ans = what(question, max_sim_sentence)
+    elif first_two[0].text == "When":
+        ans = when(question, max_sim_sentence)
+    elif first_two[0].text == "Where":
+        ans = where(question, max_sim_sentence)
+    elif first_two[0].text == "Why":
+        ans = why(question, max_sim_sentence)
+    elif first_two[0].text == "How" and first_two[1].text == "many":
+        ans = howmany(question, max_sim_sentence)
+    elif first_word_lemma == "do" or first_word_lemma == "be":
+        ans = yesno(question, max_sim_sentence)
+
+    return ans
 
 if __name__ == "__main__":
     input_file = sys.argv[1]
@@ -23,9 +82,9 @@ if __name__ == "__main__":
     questions = load_text(question_file)
     answers = []
 
-    #add empty string to answers if not able to answer question (blank line)
+    #empty string/blank line if not able to answer question
     for q in questions.sentences:
-        ans = answer(q)
+        ans = answer(q, article.sentences)
         answers.append(ans)
 
     for a in answers:
