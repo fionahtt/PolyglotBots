@@ -6,8 +6,9 @@ import re
 import codecs
 from document_parser import DocumentParser
 
-#using medium sized Spacy model
+# using medium sized Spacy model
 nlp = spacy.load("en_core_web_md")
+
 
 def load_text(filename):
     with open(filename) as textFile:
@@ -15,35 +16,59 @@ def load_text(filename):
         parser = DocumentParser(text)
         return parser
 
+
 def who(question, sentence):
     ans = ""
     return ans
+
 
 def what(question, sentence):
     ans = ""
     return ans
 
+
 def when(question, sentence):
     ans = ""
     return ans
 
+
+def get_first_NNS(words):
+    for word in words:
+        if word.xpos == 'NNS':
+            return word
+
+
 def howmany(question, sentence):
-    ans = ""
-    return ans
+    how_many_noun = get_first_NNS(question.words)
+    CD_NNS_ans = ''
+    for word in sentence.words:
+        if word.xpos == 'CD':
+            if len(sentence.words) >= word.id:
+                CD_adj_word = get_first_NNS(sentence.words[word.id:])
+                if CD_adj_word.xpos == 'NNS':
+                    if CD_adj_word.text.lower() == how_many_noun.text.lower():
+                        CD_NNS_ans = word.text + ' ' + CD_adj_word.text
+
+    return CD_NNS_ans
+
 
 def where(question, sentence):
     ans = ""
     return ans
 
+
 def why(question, sentence):
     ans = ""
     return ans
+
 
 def yesno(question, sentence):
     ans = ""
     return ans
 
-#return empty string if no answer
+# return empty string if no answer
+
+
 def answer(question, article):
     ans = ""
     max_sim = 0
@@ -75,6 +100,7 @@ def answer(question, article):
 
     return ans
 
+
 if __name__ == "__main__":
     input_file = sys.argv[1]
     question_file = sys.argv[2]
@@ -82,7 +108,7 @@ if __name__ == "__main__":
     questions = load_text(question_file)
     answers = []
 
-    #empty string/blank line if not able to answer question
+    # empty string/blank line if not able to answer question
     for q in questions.sentences:
         ans = answer(q, article.sentences)
         answers.append(ans)
