@@ -63,8 +63,7 @@ def why(question, sentence):
 
 
 def yesno(question, sentence):
-    ans = ""
-    return ans
+    return sentence.text
 
 # return empty string if no answer
 
