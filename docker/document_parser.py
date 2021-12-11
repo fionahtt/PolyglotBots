@@ -80,11 +80,6 @@ class DocumentParser:
             if appos_sentence != None:
                 self.sentences.append(appos_sentence)
 
-        for sentence in self.sentences:
-            appos_sentence = find_appositions(sentence)
-            if appos_sentence != None:
-                self.sentences.append(appos_sentence)
-
     def print_token_data(self):
         for i, sentence in enumerate(self.doc.sentences):
             print(f'====== Sentence {i+1} Words =======')
