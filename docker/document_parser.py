@@ -10,6 +10,7 @@ than current sentence
 pip install git+https://github.com/stanfordnlp/stanza.git@dev
 """
 
+
 class DocumentParser:
     nlp = stanza.Pipeline(
         lang='en', processors='tokenize,mwt,pos,lemma,depparse,constituency, ner', verbose=False)

@@ -2,10 +2,14 @@
 # -*- coding:utf8 -*-
 
 from io import DEFAULT_BUFFER_SIZE
+from re import sub
 import sys
 import codecs
 import stanza
 from document_parser import DocumentParser
+
+nlp = stanza.Pipeline(
+    lang='en', processors='tokenize,mwt,pos,lemma,depparse,constituency, ner', verbose=False)
 
 
 def load_text(filename):
@@ -69,6 +73,7 @@ def get_len_children(pt):
         else:
             pt_len += get_len_children(elem.children)
     return pt_len
+
 
 def checkValidWhatSentence(sentence):
     # WE not Rockin with people
@@ -145,6 +150,7 @@ def what(sentence):
         return None
         pass
 
+
 # fiona
 """
 NER may not work for some names of people,
@@ -173,6 +179,7 @@ Question format: Who + singular form of [VP] (past and present)
 Covers verb + infinitive (want to ___, likes to ___)
 Covers modal verbs (would ___, could ___, could have ___) -> [MD] + [VP]
 """
+
 
 def who(sentence):
     question = "Who"
@@ -443,7 +450,50 @@ def where(sentence):
 
 
 def why(sentence):
-    return None
+    if not is_simple_predicate(sentence):
+        return None
+
+    question = "Why "
+
+    def find_because_index(sentence):
+        for word in sentence.words:
+            if word.text.lower() == 'because':
+                return word.id - 1
+        return None
+    because_i = find_because_index(sentence)
+    if because_i == None:
+        return None
+
+    new_sentence = sentence.words[0].text.capitalize()
+    for word in sentence.words[1:because_i]:
+        if word.text == ',':
+            new_sentence += ','
+        else:
+            new_sentence = new_sentence + ' ' + word.text
+    new_sentence += '.'
+    parser = nlp(new_sentence)
+    new_sentence_obj = parser.sentences[0]
+    tree = new_sentence_obj.constituency
+    NP_node = tree.children[0].children[0]
+    root_verb_index = get_len_children(NP_node.children)
+
+    subject = new_sentence_obj.words[0:root_verb_index]
+    predicate = new_sentence_obj.words[root_verb_index:]
+
+    (expl_does_question_result, is_aux) = expl_does_question_phrase(
+        subject, predicate, new_sentence_obj.words[root_verb_index])
+
+    question = question + expl_does_question_result
+
+    for word in predicate[1:len(predicate) - 1]:
+        if word == ',':
+            question = question + ","
+        else:
+            question = question + " " + word.text.lower()
+    question += '?'
+
+    return question
+
 
 # rahjshiba
 
@@ -452,7 +502,7 @@ def howmany(sentence):
 
     if not is_simple_predicate(sentence):
         return None
-    question = "How many "
+    question = "How many"
 
     tree = sentence.constituency
     NP_node = tree.children[0].children[0]
@@ -469,22 +519,26 @@ def howmany(sentence):
     elif pred_nummod_i == None:
         phrase_start = sentence.words[sub_nummod_i].head - 1
         for word in sentence.words[phrase_start:len(sentence.words) - 1]:
-            question = question + word.text.lower() + ' '
+            if word.text == ',':
+                question += ','
+            else:
+                question = question + ' ' + word.text.lower()
     elif sub_nummod_i == None:
         phrase_start = sentence.words[pred_nummod_i].head - 1
         how_many_noun = sentence.words[phrase_start]
-        question = question + how_many_noun.text + " "
+        question = question + ' ' + how_many_noun.text
         (expl_does_question_result, is_aux) = expl_does_question_phrase(
             subject, predicate, sentence.words[root_verb_index])
 
-        question = question + expl_does_question_result + " "
+        question = question + ' ' + expl_does_question_result
 
         del predicate[len(subject) - pred_nummod_i - 1]
         del predicate[len(subject) - pred_nummod_i]
         for word in predicate[1:len(predicate) - 1]:
             if word == ',':
                 question = question + ","
-            question = question + word.text.lower() + " "
+            else:
+                question = question + " " + word.text.lower()
     question += '?'
     return question
 
@@ -498,11 +552,12 @@ def auxilary_verb_flip(subject, verb):
         flipped_aux_phrase = flipped_aux_phrase + aux_verb.text + ' '
         start_word = (subject[0].text) if (
             subject[0].xpos == 'NNP' or subject[0].xpos == 'NNPS') else (subject[0].text.lower())
-        flipped_aux_phrase = flipped_aux_phrase + start_word + ' '
+        flipped_aux_phrase = flipped_aux_phrase + start_word
         for word in subject[1:len(subject)]:
             if word == ',':
                 flipped_aux_phrase = flipped_aux_phrase + ","
-            flipped_aux_phrase = flipped_aux_phrase + word.text + ' '
+            else:
+                flipped_aux_phrase = flipped_aux_phrase + ' ' + word.text
         return flipped_aux_phrase
     return None
 
@@ -522,36 +577,36 @@ def expl_does_question_phrase(subject, predicate, verb):
     for word in subject:
         if word.xpos == 'PRP':
             if word.text.lower() in ['it', 'he', 'she']:
-                conjugated_do = 'does '
+                conjugated_do = 'does'
                 break
             elif word.text.lower() in ['i', 'you', 'we', 'they']:
                 conjugated_do = 'do'
                 break
         elif word.xpos == 'NNP':
-            conjugated_do = 'does '
+            conjugated_do = 'does'
             break
         elif word.xpos == 'NNS':
-            conjugated_do = 'do '
+            conjugated_do = 'do'
             break
         elif word.xpos == 'NN':
-            conjugated_do = 'does '
+            conjugated_do = 'does'
             break
 
     if has_expl != None:
-        flipped_verb_phrase = verb.text + has_expl.text + " "
+        flipped_verb_phrase = verb.text + ' ' + has_expl.text + ' '
     elif aux_verb_flipped_phrase != None:
-        flipped_verb_phrase = aux_verb_flipped_phrase
+        flipped_verb_phrase = aux_verb_flipped_phrase + ' '
     else:
-        flipped_verb_phrase = conjugated_do + " "
-        start_word = (subject[0].text) if (
-            subject[0].xpos == 'NNP' or subject[0].xpos == 'NNPS') else (subject[0].text.lower())
-        flipped_verb_phrase = flipped_verb_phrase + start_word + ' '
+        flipped_verb_phrase = conjugated_do
+        start_word = subject[0].text
+        flipped_verb_phrase = flipped_verb_phrase + ' ' + start_word
         for word in subject[1:]:
             if word == ',':
-                flipped_aux_phrase = flipped_aux_phrase + ","
-            flipped_verb_phrase = flipped_verb_phrase + word.text + " "
+                flipped_verb_phrase = flipped_verb_phrase + ","
+            else:
+                flipped_verb_phrase = flipped_verb_phrase + " " + word.text
 
-        flipped_verb_phrase += verb.lemma
+        flipped_verb_phrase = flipped_verb_phrase + ' ' + verb.lemma
     return (flipped_verb_phrase, aux_verb_flipped_phrase != None)
 
 
@@ -581,17 +636,23 @@ def yesno(sentence):
     verb = sentence.words[root_verb_index]
 
     (expl_does_question_result, is_aux) = expl_does_question_phrase(
-        subject, predicate, sentence.words[root_verb_index])
+        subject, predicate, verb)
 
     expl_does_question_result_split = expl_does_question_result.split()
 
-    yes_no_question = expl_does_question_result_split[0].capitalize(
-    ) + ' ' + " ".join(expl_does_question_result_split[1:]) + ' '
+    yes_no_question = expl_does_question_result_split[0].capitalize()
+
+    for word in expl_does_question_result_split[1:]:
+        if word == ',':
+            yes_no_question = yes_no_question + ","
+        else:
+            yes_no_question = yes_no_question + ' ' + word
 
     for word in predicate[1:len(predicate) - 1]:
         if word == ',':
             yes_no_question = yes_no_question + ","
-        yes_no_question = yes_no_question + word.text + ' '
+        else:
+            yes_no_question = yes_no_question + ' ' + word.text
 
     yes_no_question += '?'
 
@@ -606,12 +667,13 @@ if __name__ == "__main__":
     questions = []
 
     for sentence in parser.sentences:
-        print("This is the sentence: " + sentence.text)
+        print(sentence.text)
         who_question = who(sentence)
         what_question = what(sentence)
         howmany_question = howmany(sentence)
         yesno_question = yesno(sentence)
         when_question = when(sentence)
+        why_question = why(sentence)
 
         if (who_question != None):
             questions.append(who_question)
@@ -623,6 +685,8 @@ if __name__ == "__main__":
             questions.append(yesno_question)
         if (when_question != None):
             questions.append(when_question)
+        if (why_question != None):
+            questions.append(why_question)
 
     for i in range(N):
         if (i < len(questions)):

@@ -58,8 +58,23 @@ def where(question, sentence):
 
 
 def why(question, sentence):
-    ans = ""
-    return ans
+    ans = ''
+
+    def find_because_index(sentence):
+        for word in sentence.words:
+            if word.text.lower() == 'because':
+                return word.id - 1
+        return None
+    because_i = find_because_index(sentence)
+    if because_i == None:
+        return ''
+    else:
+        for word in sentence.words[because_i:len(sentence.words) - 1]:
+            if word.text == ',':
+                ans += word.text
+            else:
+                ans = ans + word.text + ' '
+    return ans.capitalize()
 
 
 def yesno(question, sentence):
