@@ -150,6 +150,13 @@ def what(sentence):
         return None
         pass
 
+def get_subject(deps):
+    subject = ""
+    for elem in deps:
+        if elem[1][:5] == "nsubj" and elem[0].deprel == "root":
+            subject = elem[2].text
+            break
+    return subject
 
 # fiona
 """
@@ -158,8 +165,8 @@ but ultimately works better than other processors
 that only can point out proper nouns
 (for "who" we want a person)
 Only want a proper noun person for a "good" question 
-(can't answer with "her" for a question)
-Only takes in sentences with proper noun in [NP]
+-only takes in sentences with proper noun person
+(can't answer with "her" for a question) 
 ________________
 Verb [VP] formats:
 verb_tenses
@@ -168,12 +175,16 @@ ________________
 Limitations:
 Does not ask questions about sentences with person in verb phrase
 - "The best person is Lauren" 
+But avoid issues like:
+-"He is Lauren's best friend." -> Who is Lauren's best friend?
 NER may not recognize name of person as name, or may classify something that is not a name
 as a name
 Grammar limitations: "The Johnsons like to swim" -> "Who like to swim?"
 Supposed to be "Who likes to swim?" (present tense supposed to have singular verb form)
 ____________
 Sentence formats: simple predicate ([NP] + [VP])
+-only makes a question when nsubj is proper noun person
+-avoids sentences like: Lauren's house is just around the block.
 Question format: Who + singular form of [VP] (past and present)
 -done by taking all children of [VP] and making sure it's in singular form
 Covers verb + infinitive (want to ___, likes to ___)
@@ -184,15 +195,6 @@ Covers modal verbs (would ___, could ___, could have ___) -> [MD] + [VP]
 def who(sentence):
     question = "Who"
     has_person = False
-
-    # check if sentence has a proper noun person
-    # get first person mentioned in sentence (will be in [NP])
-    for ent in sentence.entities:
-        if ent.type == "PERSON":
-            has_person = True
-            break
-    if not has_person:
-        return None
 
     verb_tenses = ["VBZ", "VBD", "VBP", "MD"]
 
@@ -207,50 +209,43 @@ def who(sentence):
     if possible_np != "NP" or possible_vp != "VP":  # or possible_period != ".":
         return None
 
+    #get subject of sentence and make sure that it is a proper noun person
+    subject = get_subject(sentence.dependencies)
+
+    # check if sentence has a proper noun person
+    # get first person mentioned in sentence (will be in [NP])
+    for ent in sentence.entities:
+        if ent.type == "PERSON" and ent.text == subject:
+            has_person = True
+    if not has_person:
+        return None
+
     # check verb formats of [VP]
     vp = sentence.constituency.children[0].children[1].children
     if vp[0].label not in verb_tenses:
         return None
 
-    """
-    # check that proper noun person is in noun phrase
-    np = sentence.constituency.children[0].children[0].children
-    noun_phrase = get_children(np)
-    if person not in noun_phrase:
-        return None
-    """
-
     # get entire [VP]
     verb_phrase = get_children(vp)
 
-    # make first verb
+    """
+    # make first verb (going to be used for switching to singular verb form)
     first_verb = verb_phrase.split()[0]
+    """
 
     return question + verb_phrase + "?"
 
 
 """
-check that there's a proper noun in a phrase
-used to check whether there's proper noun in NP (good question)
-Limitations: returns true if there's any NNP in the phrase
-when checking for NNP in [NP] it doesn't always work
-"He, as the president of the USA, went to the beach."
--> True because "USA" is considered NNP but would be bad question b/c don't know who "he" is
-(issue for all question templates, including who)
-
-check nsubj of verb 
+check nsubj of root verb is NNP (subject of sentence is proper noun)
+-leads to good question (rather than asking a question where pronoun is subject)
+-used for when
 """
-
-# List[ParseTree] -> bool
-
-
 def check_NNP(deps):
     for elem in deps:
-        if elem[1] == "nsubj":
-            if elem[2].xpos == "NNP":
-                print(elem[2].text + "yay")
+        if elem[1][:5] == "nsubj":
+            if elem[0].deprel == "root" and elem[2].xpos == "NNP":
                 return True
-    print("None :(")
     return False
 
 # check that [PP] has a DATE
@@ -299,21 +294,31 @@ def construct_question(np, vp, switch_order, do_tense, first_verb_lemma):
 
 
 """
+Entities to look for (referred to as ENTS):
+-DATE
+-EVENT
+-TIME
+
+-GPE
+-LOC
+-EVENT
+-FAC
+
 Sentence format:
-Form 1: [PP] with DATE + [NP] + [VP]
-Form 2: [NP] + [VP] with [PP] with DATE
+Form 1: ([PP] with DATE) + [NP] + [VP]
+Form 2: [NP] + [VP] (with ([PP] with DATE) at end)
 _________
 Question format:
-When did/does/do [NP] + [VP] (w/o [PP] with DATE if Form 2) (lemma form of verb)
+When did/does/do [NP] + [VP] (w/o [PP] with DATE if Form 2, lemma form of verb)
 -VBD => did
 -VBP => do
 -VBZ => does
 _________
 We only consider dates within a [PP] because:
--something like "60 years" is classified as date -> could be age
+-something like "60 years" is classified as date -> could be age ("He is 60 years old.")
 _________
 Limitations:
-Limited to sentences with format above
+Limited to sentences with format above, only when nsubj of sentence is a proper noun
 For a sentence with both forms, the question will ask about the date in the first [PP]
 """
 
@@ -324,9 +329,9 @@ def when(sentence):
     question = "When"
     has_date = False
     dates = []  # keep track of dates in sentence to check if [PP] has one
-    # check if sentence has a date entity
+    # check if sentence has a one of the listed entities
     for ent in sentence.entities:
-        if ent.type == "DATE":
+        if ent.type == "DATE" or ent.type == "EVENT" or ent.type == "TIME":
             has_date = True
             dates.append(ent.text)
     if not has_date:
@@ -679,6 +684,7 @@ if __name__ == "__main__":
 
         if (who_question != None):
             questions.append(who_question)
+        """
         if (howmany_question != None):
             questions.append(howmany_question)
         if (what_question != None):
@@ -689,6 +695,7 @@ if __name__ == "__main__":
             questions.append(when_question)
         if (why_question != None):
             questions.append(why_question)
+        """
 
     for i in range(N):
         if (i < len(questions)):

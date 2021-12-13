@@ -18,8 +18,39 @@ def load_text(filename):
 
 
 def who(question, sentence):
+    #only correct for non-compound sentences (two subject+verb pairings)
+    #when compound sentence -> handle each part as different sentence
+    #check if PERSON in each one, if yes then compare sentence with question and choose correct sentence
+    """
+    question_words = question.split()[1:]
+    sentence_comma_split = sentence.split(",")
+    sentence_words = []
+    for s in sentence_comma_split:
+        sentence_words.append(s.split())
+    """
     ans = ""
-    return ans
+    people = []
+    has_person = False
+
+    #check if there's a PERSON in the sentence
+    for ent in sentence.entities:
+        if ent.type == "PERSON":
+            people.append(ent.text)
+            has_person = True
+    if not has_person:
+        return ans
+
+    subject = ""
+    for elem in sentence.dependencies:
+        if elem[1][:5] == "nsubj" and elem[0].deprel == "root":
+            subject = elem[2].text
+            break
+
+    for person in people:
+        if person == subject:
+            return person
+
+    return people[0]
 
 
 def what(question, sentence):
@@ -53,6 +84,7 @@ def howmany(question, sentence):
 
 
 def where(question, sentence):
+
     ans = ""
     return ans
 
