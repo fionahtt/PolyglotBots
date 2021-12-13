@@ -684,7 +684,6 @@ if __name__ == "__main__":
 
         if (who_question != None):
             questions.append(who_question)
-        """
         if (howmany_question != None):
             questions.append(howmany_question)
         if (what_question != None):
@@ -695,7 +694,6 @@ if __name__ == "__main__":
             questions.append(when_question)
         if (why_question != None):
             questions.append(why_question)
-        """
 
     for i in range(N):
         if (i < len(questions)):

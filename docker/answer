@@ -35,10 +35,16 @@ def who(question, sentence):
     #check if there's a PERSON in the sentence
     for ent in sentence.entities:
         if ent.type == "PERSON":
-            people.append(ent.text)
-            has_person = True
+            if ent.text not in question.text:
+                people.append(ent.text)
+                has_person = True
     if not has_person:
         return ans
+
+    if len(people) == 1:
+        return people[0]
+
+    ans = people[0]
 
     subject = ""
     for elem in sentence.dependencies:
@@ -48,9 +54,9 @@ def who(question, sentence):
 
     for person in people:
         if person == subject:
-            return person
+            ans = person
 
-    return people[0]
+    return ans
 
 
 def what(question, sentence):
@@ -59,7 +65,21 @@ def what(question, sentence):
 
 
 def when(question, sentence):
+    #handle composite sentences (only want to look in part of sentence with most matching words)
     ans = ""
+    times = []
+    has_time = False
+
+    for ent in sentence.entities:
+        if ent.type == "DATE" or ent.type == "TIME" or ent.type == "EVENT":
+            if ent.text not in question.text:
+                times.append(ent.text)
+                has_time = True
+    if not has_time:
+        return ans
+
+    ans = times[0]
+
     return ans
 
 
@@ -84,8 +104,21 @@ def howmany(question, sentence):
 
 
 def where(question, sentence):
-
+    #handle composite sentences (only want to look in part of sentence with most matching words)
     ans = ""
+    locations = []
+    has_location = False
+
+    for ent in sentence.entities:
+        if ent.type == "GPE" or ent.type == "LOC" or ent.type == "EVENT" or ent.type == "FAC":
+            if ent.text not in question.text:
+                locations.append(ent.text)
+                has_location = True
+    if not has_location:
+        return ans
+
+    ans = locations[0]
+
     return ans
 
 
