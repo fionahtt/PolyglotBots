@@ -237,16 +237,20 @@ when checking for NNP in [NP] it doesn't always work
 "He, as the president of the USA, went to the beach."
 -> True because "USA" is considered NNP but would be bad question b/c don't know who "he" is
 (issue for all question templates, including who)
+
+check nsubj of verb 
 """
 
 # List[ParseTree] -> bool
 
 
-def check_NNP(pt):
-    for elem in pt:
-        if elem.children[0].children == ():
-            if elem.label == "NNP":
+def check_NNP(deps):
+    for elem in deps:
+        if elem[1] == "nsubj":
+            if elem[2].xpos == "NNP":
+                print(elem[2].text + "yay")
                 return True
+    print("None :(")
     return False
 
 # check that [PP] has a DATE
@@ -327,6 +331,9 @@ def when(sentence):
             dates.append(ent.text)
     if not has_date:
         return None
+    # check proper noun in subject of sentence
+    if not check_NNP(sentence.dependencies):
+        return None
 
     # verb tense of [VP] matching to do/does/did
     tense_matching = {"VBD": " did", "VBP": " do", "VBZ": " does"}
@@ -361,10 +368,6 @@ def when(sentence):
         pp = sentence.constituency.children[0].children[0].children
         np = sentence.constituency.children[0].children[2].children
         vp = sentence.constituency.children[0].children[3].children
-
-        # check proper noun (NNP) in noun phrase
-        if not check_NNP(np):
-            return None
 
         # check DATE in [PP]
         pp_phrase = get_children(pp)
@@ -667,7 +670,6 @@ if __name__ == "__main__":
     questions = []
 
     for sentence in parser.sentences:
-        print(sentence.text)
         who_question = who(sentence)
         what_question = what(sentence)
         howmany_question = howmany(sentence)
