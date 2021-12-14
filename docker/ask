@@ -790,17 +790,13 @@ if __name__ == "__main__":
     questions = []
 
     for sentence in parser.sentences:
-        """
         who_question = who(sentence)
         what_question = what(sentence)
         howmany_question = howmany(sentence)
         yesno_question = yesno(sentence)
-        """
         when_question = when(sentence)
         where_question = where(sentence)
-        """
         why_question = why(sentence)
-        
 
         if (who_question != None):
             questions.append(who_question)
@@ -810,15 +806,12 @@ if __name__ == "__main__":
             questions.append(what_question)
         if (yesno_question != None):
             questions.append(yesno_question)
-            """
         if (when_question != None):
             questions.append(when_question)
         if (where_question != None):
             questions.append(where_question)
-            """
         if (why_question != None):
             questions.append(why_question)
-            """
 
     for i in range(N):
         if (i < len(questions)):
