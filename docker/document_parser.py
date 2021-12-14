@@ -21,7 +21,7 @@ class DocumentParser:
             text = re.sub(r"\([^()]*\)", "", text)
             # replace semi-colons with periods
             text = re.sub(r";", ".", text)
-            text = re.sub("\n", ".", text)
+            text = re.sub("\n", "\n\n\n", text)
             return text
 
         def find_appositions(sentence):
