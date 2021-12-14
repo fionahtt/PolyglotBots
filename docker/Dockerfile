@@ -13,7 +13,7 @@ RUN apt-get -y update && \
 # Install spaCy
 RUN pip3 install --upgrade pip
 RUN pip3 install spacy
-RUN python3 -m spacy download en_core_web_lg
+RUN python3 -m spacy download en_core_web_md
 RUN pip3 install git+https://github.com/stanfordnlp/stanza.git@dev
 RUN python3 -c 'import stanza; stanza.download("en")'
 
