@@ -35,7 +35,6 @@ def is_simple_predicate(sentence):
         if tree_labels[i].label != correct_labels[i]:
             return False
         if tree_labels[i].label == 'VP':
-            print(tree_labels[i].children)
             if len(tree_labels[i].children) > 2:
                 return False
     return True
@@ -700,7 +699,7 @@ def howmany(sentence):
         how_many_noun = sentence.words[phrase_start]
         question = question + ' ' + how_many_noun.text
         (expl_does_question_result, is_aux) = expl_does_question_phrase(
-            subject, predicate, sentence.words[root_verb_index])
+            subject, predicate, sentence.words[root_verb_index],sentence)
 
         question = question + ' ' + expl_does_question_result
 
@@ -734,7 +733,7 @@ def auxilary_verb_flip(subject, verb):
     return None
 
 
-def expl_does_question_phrase(subject, predicate, verb):
+def expl_does_question_phrase(subject, predicate, verb, sentence):
     has_expl = None
     conjugated_do = ''
     flipped_verb_phrase = ''
@@ -767,7 +766,10 @@ def expl_does_question_phrase(subject, predicate, verb):
     if has_expl != None:
         flipped_verb_phrase = verb.text + ' ' + has_expl.text.lower()
     elif aux_verb_flipped_phrase != None:
-        flipped_verb_phrase = aux_verb_flipped_phrase + ' '
+        flipped_verb_phrase = aux_verb_flipped_phrase
+        if verb.upos == 'AUX' and sentence.words[verb.head - 1].xpos == 'VBN':
+            flipped_verb_phrase  = flipped_verb_phrase + ' ' + sentence.words[verb.head - 1].text
+            del predicate[verb.head - 1 - len(subject)]
     else:
         flipped_verb_phrase = conjugated_do
         start_word = subject[0].text
@@ -813,7 +815,7 @@ def yesno(sentence):
     verb = sentence.words[root_verb_index]
 
     (expl_does_question_result, is_aux) = expl_does_question_phrase(
-        subject, predicate, verb)
+        subject, predicate, verb,sentence)
 
     expl_does_question_result_split = expl_does_question_result.split()
 
