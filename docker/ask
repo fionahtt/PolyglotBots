@@ -318,6 +318,10 @@ def when(sentence):
                 return None
     else:
         # [PP] + [,] + [NP] + [VP] + [.] form (w/o period)
+        
+        if len(sentence.constituency.children[0].children) < 5:
+            return None
+
         possible_comma = sentence.constituency.children[0].children[1].label
         possible_np = sentence.constituency.children[0].children[2].label
         possible_vp = sentence.constituency.children[0].children[3].label
@@ -443,6 +447,9 @@ def where(sentence):
                 return None
     else:
         # [PP] + [,] + [NP] + [VP] + [.] form (w/o period)
+        if len(sentence.constituency.children[0].children) < 5:
+            return None
+
         possible_comma = sentence.constituency.children[0].children[1].label
         possible_np = sentence.constituency.children[0].children[2].label
         possible_vp = sentence.constituency.children[0].children[3].label
