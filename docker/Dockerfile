@@ -8,6 +8,7 @@ ENV LC_ALL C.UTF-8
 # Install Python
 RUN apt-get -y update && \
     apt-get -y upgrade && \
+    apt-get -y install git && \
 	apt-get -y install python3-pip python3-dev
 
 # Install spaCy
