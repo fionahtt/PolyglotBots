@@ -1,0 +1,60 @@
+Who:
+NER may not work for some names of people, but ultimately works better than other processors that only can point out proper nouns
+(for "who" we want a person)
+Only want a proper noun person for a "good" question 
+-only takes in sentences with proper noun person
+(can't answer with "her" for a question) 
+________________
+Verb [VP] formats:
+verb_tenses
+verb_tenses + [something] ([VP], [NP], etc)
+________________
+Limitations:
+Does not ask questions about sentences with person in verb phrase
+- "The best person is Lauren" 
+But avoid issues like:
+-"He is Lauren's best friend." -> Who is Lauren's best friend?
+NER may not recognize name of person as name, or may classify something that is not a name
+as a name
+Grammar limitations: "The Johnsons like to swim" -> "Who like to swim?"
+Supposed to be "Who likes to swim?" (present tense supposed to have singular verb form)
+____________
+Sentence formats: simple predicate ([NP] + [VP])
+-only makes a question when nsubj is proper noun person
+-avoids sentences like: Lauren's house is just around the block.
+Question format: Who + singular form of [VP] (past and present)
+-done by taking all children of [VP] and making sure it's in singular form
+Covers verb + infinitive (want to ___, likes to ___)
+Covers modal verbs (would ___, could ___, could have ___) -> [MD] + [VP]
+
+When:
+Entities to look for:
+-DATE
+-EVENT
+-TIME
+
+Sentence format:
+Form 1: ([PP] with DATE) + [NP] + [VP]
+Form 2: [NP] + [VP] (with ([PP] with DATE) at end)
+_________
+Question format:
+When did/does/do [NP] + [VP] (w/o [PP] with DATE if Form 2, lemma form of verb)
+-VBD => did
+-VBP => do
+-VBZ => does
+_________
+We only consider dates within a [PP] because:
+-something like "60 years" is classified as date -> could be age ("He is 60 years old.")
+_________
+Limitations:
+Limited to sentences with format above, only when nsubj of sentence is a proper noun
+For a sentence with both forms, the question will ask about the date in the first [PP]
+
+Where:
+Entities to look for:
+-GPE, LOC, FAC
+Same structure as "When"
+
+get_children grammar limitations:
+-sometimes "3-0" becomes "3- 0"
+-"didn't" -> "did n't"
