@@ -1,6 +1,5 @@
 import stanza
 import re
-stanza.download('en')
 
 """
 Notes:
