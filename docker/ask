@@ -653,6 +653,8 @@ def is_howmany(subject, predicate):
 def yesno(sentence):
     if not is_simple_predicate(sentence):
         return None
+    if not check_NNP(sentence.dependencies):
+        return None
 
     tree = sentence.constituency
     NP_node = tree.children[0].children[0]
