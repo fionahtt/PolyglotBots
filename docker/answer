@@ -73,9 +73,9 @@ def who(question, sentence):
     people = []
     has_person = False
 
-    #check if there's a PERSON in the sentence
+    #check if there's a PERSON or ORG in the sentence
     for ent in s.entities:
-        if ent.type == "PERSON":
+        if ent.type == "PERSON" or ent.type == "ORG":
             if ent.text not in question.text:
                 people.append(ent.text)
                 has_person = True
@@ -287,17 +287,17 @@ def answer(question, article):
 
     first_two = question.words[:2]
     first_word_lemma = first_two[0].lemma
-    if first_two[0].text == "Who" or first_two[0].text == "Whom" :
+    if first_two[0].text.lower() == "who" or first_two[0].text.lower() == "whom":
         ans = get_ans(question, who)
-    elif first_two[0].text == "What":
+    elif first_two[0].text.lower() == "what":
         ans = get_ans(question, what)
-    elif first_two[0].text == "When":
+    elif first_two[0].text.lower() == "when":
         ans = get_ans(question, when)
-    elif first_two[0].text == "Where":
+    elif first_two[0].text.lower() == "where":
         ans = get_ans(question, where)
-    elif first_two[0].text == "Why":
+    elif first_two[0].text.lower() == "why":
         ans = get_ans(question, why)
-    elif first_two[0].text == "How" and first_two[1].text == "many":
+    elif first_two[0].text.lower() == "how" and first_two[1].text.lower() == "many":
         ans = get_ans(question, howmany)
     elif first_word_lemma == "do" or first_word_lemma == "be":
         ans = get_ans(question, yesno)
