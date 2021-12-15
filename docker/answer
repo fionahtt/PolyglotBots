@@ -16,18 +16,41 @@ def load_text(filename):
         parser = DocumentParser(text)
         return parser
 
+def get_children(pt):
+    phrase = ""
+    for elem in pt:
+        if elem.children == ():
+            first = elem.label[0]
+            if elem.label == ",":
+                phrase += elem.label
+            elif first == "'" or first == "-":
+                phrase += elem.label
+            else:
+                phrase += " " + elem.label
+        else:
+            phrase += get_children(elem.children)
+    return phrase
 
 def who(question, sentence):
     #only correct for non-compound sentences (two subject+verb pairings)
     #when compound sentence -> handle each part as different sentence
     #check if PERSON in each one, if yes then compare sentence with question and choose correct sentence
-    """
-    question_words = question.split()[1:]
-    sentence_comma_split = sentence.split(",")
-    sentence_words = []
-    for s in sentence_comma_split:
-        sentence_words.append(s.split())
-    """
+    compound_sentence = False
+    if len(sentence.constituency.children[0].children) >= 5:
+        possible_s1 = sentence.constituency.children[0].children[0].label
+        possible_comma = sentence.constituency.children[0].children[1].label
+        possible_cc = sentence.constituency.children[0].children[2].label
+        possible_s2 = sentence.constituency.children[0].children[2].label
+
+        if possible_s1=="S" and possible_comma=="," and possible_cc=="CC" and possible_s2=="S":
+            compound_sentence = True
+    
+    if compound_sentence:
+        s1 = get_children(sentence.constituency.children[0].children[0].children)
+        s2 = get_children(sentence.constituency.children[0].children[2].children)
+
+    
+
     ans = ""
     people = []
     has_person = False
@@ -70,22 +93,6 @@ def isValidwhatSentence(sentence):
         return False
 
     return True
-
-def get_children(pt):
-    phrase = ""
-    for elem in pt:
-        if elem.children == ():
-            first = elem.label[0]
-            if elem.label == ",":
-                phrase += elem.label
-            elif first == "'" or first == "-":
-                phrase += elem.label
-            else:
-                phrase += " " + elem.label
-        else:
-            phrase += get_children(elem.children)
-    return phrase
-
 
 def getVerbPhrase(sentence):
     vp = sentence.constituency.children[0].children[1].children
