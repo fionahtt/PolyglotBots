@@ -4,10 +4,13 @@ import sys
 import spacy
 import re
 import codecs
+import stanza
 from document_parser import DocumentParser
 
 # using medium sized Spacy model
-nlp = spacy.load("en_core_web_md")
+nlp_spacy = spacy.load("en_core_web_md")
+nlp = stanza.Pipeline(
+    lang='en', processors='tokenize,mwt,pos,lemma,depparse,constituency, ner', verbose=False)
 
 
 def load_text(filename):
@@ -31,11 +34,29 @@ def get_children(pt):
             phrase += get_children(elem.children)
     return phrase
 
+def break_compound_sentence(sentence, question):
+    s1 = get_children(sentence.constituency.children[0].children[0].children)
+    s2 = get_children(sentence.constituency.children[0].children[2].children)
+
+    sentence1 = nlp_spacy(s1)
+    sentence2 = nlp_spacy(s2)
+    q = nlp_spacy(question.text)
+    sim1 = sentence1.similarity(q)
+    sim2 = sentence2.similarity(q)
+    if sim1 > sim2:
+        s = nlp(s1).sentences[0]
+    else:
+        s = nlp(s2).sentences[0]
+
+    return s
+
+#limitations: if entity appears in question, then sentence is eliminated
 def who(question, sentence):
     #only correct for non-compound sentences (two subject+verb pairings)
     #when compound sentence -> handle each part as different sentence
     #check if PERSON in each one, if yes then compare sentence with question and choose correct sentence
     compound_sentence = False
+    s = sentence
     if len(sentence.constituency.children[0].children) >= 5:
         possible_s1 = sentence.constituency.children[0].children[0].label
         possible_comma = sentence.constituency.children[0].children[1].label
@@ -46,17 +67,14 @@ def who(question, sentence):
             compound_sentence = True
     
     if compound_sentence:
-        s1 = get_children(sentence.constituency.children[0].children[0].children)
-        s2 = get_children(sentence.constituency.children[0].children[2].children)
-
-    
+        s = break_compound_sentence(sentence, question)
 
     ans = ""
     people = []
     has_person = False
 
     #check if there's a PERSON in the sentence
-    for ent in sentence.entities:
+    for ent in s.entities:
         if ent.type == "PERSON":
             if ent.text not in question.text:
                 people.append(ent.text)
@@ -67,10 +85,10 @@ def who(question, sentence):
     if len(people) == 1:
         return people[0]
 
-    ans = people[0]
+    ans = people[0] #default answer
 
     subject = ""
-    for elem in sentence.dependencies:
+    for elem in s.dependencies:
         if elem[1][:5] == "nsubj" and elem[0].deprel == "root":
             subject = elem[2].text
             break
@@ -114,9 +132,9 @@ def what(question, sentence):
     np = (getNounPhrase(sentence)).strip()
     vp = (getVerbPhrase(sentence)).strip()
 
-    pq = nlp(main_question_part)
-    pnp = nlp(np)
-    pvp = nlp(vp)
+    pq = nlp_spacy(main_question_part)
+    pnp = nlp_spacy(np)
+    pvp = nlp_spacy(vp)
 
     sim1 = pq.similarity(pnp)
     sim2 = pq.similarity(pvp)
@@ -126,14 +144,28 @@ def what(question, sentence):
     else:
         return np
 
-
+#limitations: if entity appears in question, then sentence is eliminated
 def when(question, sentence):
-    #handle composite sentences (only want to look in part of sentence with most matching words)
+    #handle composite sentences
+    compound_sentence = False
+    s = sentence
+    if len(sentence.constituency.children[0].children) >= 5:
+        possible_s1 = sentence.constituency.children[0].children[0].label
+        possible_comma = sentence.constituency.children[0].children[1].label
+        possible_cc = sentence.constituency.children[0].children[2].label
+        possible_s2 = sentence.constituency.children[0].children[2].label
+
+        if possible_s1=="S" and possible_comma=="," and possible_cc=="CC" and possible_s2=="S":
+            compound_sentence = True
+    
+    if compound_sentence:
+        s = break_compound_sentence(sentence, question)
+
     ans = ""
     times = []
     has_time = False
 
-    for ent in sentence.entities:
+    for ent in s.entities:
         if ent.type == "DATE" or ent.type == "TIME" or ent.type == "EVENT":
             if ent.text not in question.text:
                 times.append(ent.text)
@@ -141,7 +173,7 @@ def when(question, sentence):
     if not has_time:
         return ans
 
-    ans = times[0]
+    ans = times[0] #default answer
 
     return ans
 
@@ -165,14 +197,28 @@ def howmany(question, sentence):
 
     return CD_NNS_ans
 
-
+#limitations: if entity appears in question, then sentence is eliminated
 def where(question, sentence):
-    #handle composite sentences (only want to look in part of sentence with most matching words)
+    #handle composite sentences
+    compound_sentence = False
+    s = sentence
+    if len(sentence.constituency.children[0].children) >= 5:
+        possible_s1 = sentence.constituency.children[0].children[0].label
+        possible_comma = sentence.constituency.children[0].children[1].label
+        possible_cc = sentence.constituency.children[0].children[2].label
+        possible_s2 = sentence.constituency.children[0].children[2].label
+
+        if possible_s1=="S" and possible_comma=="," and possible_cc=="CC" and possible_s2=="S":
+            compound_sentence = True
+    
+    if compound_sentence:
+        s = break_compound_sentence(sentence, question)
+
     ans = ""
     locations = []
     has_location = False
 
-    for ent in sentence.entities:
+    for ent in s.entities:
         if ent.type == "GPE" or ent.type == "LOC" or ent.type == "EVENT" or ent.type == "FAC":
             if ent.text not in question.text:
                 locations.append(ent.text)
@@ -180,7 +226,7 @@ def where(question, sentence):
     if not has_location:
         return ans
 
-    ans = locations[0]
+    ans = locations[0] #default answer
 
     return ans
 
@@ -214,11 +260,11 @@ def yesno(question, sentence):
 
 def answer(question, article):
     ans = ""
-    q = nlp(question.text)
+    q = nlp_spacy(question.text)
     sentences = []
     sentence_scores = []
     for sentence in article:
-        s = nlp(sentence.text)
+        s = nlp_spacy(sentence.text)
         sim = q.similarity(s)
         while sim in sentence_scores:
             sim += 0.0000000000000001
@@ -231,6 +277,7 @@ def answer(question, article):
         ans = None
         while((ans == None or ans == "") and index < 3):
             matched_sentence = max_3[index][1]
+            print(matched_sentence.text)
             try:
                 ans = function(question,matched_sentence)
             except:

@@ -353,7 +353,6 @@ For a sentence with both forms, the question will ask about the date in the firs
 
 # fiona
 
-
 def when(sentence):
     question = "When"
     has_date = False
@@ -851,14 +850,16 @@ if __name__ == "__main__":
     where_questions = []
 
     for sentence in parser.sentences:
+        """
         who_question = who(sentence)
         what_question = what(sentence)
         howmany_question = howmany(sentence)
         yesno_question = yesno(sentence)
         when_question = when(sentence)
         why_question = why(sentence)
+        """
         where_question = where(sentence)
-
+        """
         if (who_question != None):
             who_questions.append(who_question)
         if (howmany_question != None):
@@ -871,9 +872,10 @@ if __name__ == "__main__":
             when_questions.append(when_question)
         if (why_question != None):
             why_questions.append(why_question)
+        """
         if (where_question != None):
-            where_questions.append(where_question)
-
+            questions.append(where_question)
+    """
     i = 0
     while(i < N):
         if (i < len(who_questions)):
@@ -891,7 +893,7 @@ if __name__ == "__main__":
         if (i < len(where_questions)):
             questions.append(where_questions[i])
         i += 1
-
+    """
     for i in range(N):
         if (i < len(questions)):
             print(questions[i])
