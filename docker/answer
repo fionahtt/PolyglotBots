@@ -213,6 +213,8 @@ def answer(question, article):
     for sentence in article:
         s = nlp(sentence.text)
         sim = q.similarity(s)
+        while sim in sentence_scores:
+            sim += 0.0000000000000001
         sentence_scores.append(sim)
         sentences.append(sentence)
     max_3 = sorted(zip(sentence_scores, sentences), reverse=True)[:30]
