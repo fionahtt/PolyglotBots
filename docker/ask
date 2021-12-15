@@ -77,8 +77,14 @@ def get_len_children(pt):
 
 def checkValidWhatSentence(sentence):
     # WE not Rockin with people
+
+    #get subject of sentence and make sure that it is a proper noun person
+    subject = get_subject(sentence.dependencies)
+
+    # check if sentence has a proper noun person
+    # get first person mentioned in sentence (will be in [NP])
     for ent in sentence.entities:
-        if ent.type == "PERSON":
+        if ent.type == "PERSON" and ent.text == subject:
             return False
 
     if len(sentence.constituency.children[0].children) < 3:
@@ -122,6 +128,14 @@ def getIsEndPhrase(np, vp):
         return get_children(vp).strip()[3:]
     return None
 
+def getIsEndPhrase2(np, vp):
+    if checkNPPP(np):
+        return get_children(np).strip()
+    elif checkNPPP(vp[1].children):
+        # Remove the word is
+        return get_children(vp).strip()[4:]
+    return None
+
 # seth
 
 
@@ -134,7 +148,6 @@ def what(sentence):
 
         constParse = sentence.constituency.children[0]
         mainVerb = constParse.children[1].children[0].children[0].label
-
         if mainVerb == 'is':
             # Check if we should use the Noun Phrase or Verb Phrase for this question
             endPhrase = getIsEndPhrase(
@@ -144,7 +157,14 @@ def what(sentence):
             else:
                 endPhrase = endPhrase[0].lower() + endPhrase[1:]
             return f"What is {endPhrase}?"
-
+        elif mainVerb == 'was':
+             endPhrase = getIsEndPhrase2(
+                sentence.constituency.children[0].children[0].children, sentence.constituency.children[0].children[1].children)
+            if (endPhrase == None):
+                return None
+            else:
+                endPhrase = endPhrase[0].lower() + endPhrase[1:]
+            return f"What was {endPhrase}?"
         return None
     except IndexError as e:
         return None
@@ -251,12 +271,12 @@ def check_NNP(deps):
 # check that [PP] has a DATE
 
 
-def check_pp_has_ent(pp_phrase, ents):
-    pp_has_ent = False
-    for e in ents:
-        if e in pp_phrase:
-            pp_has_ent = True
-    return pp_has_ent
+def check_pp_has_date(pp_phrase, dates):
+    pp_has_date = False
+    for d in dates:
+        if d in pp_phrase:
+            pp_has_date = True
+    return pp_has_date
 
 
 def get_lemma(sentence, vp):
@@ -294,8 +314,15 @@ def construct_question(np, vp, switch_order, do_tense, first_verb_lemma):
 
 
 """
-Entities to look for:
--DATE, EVENT, TIME
+Entities to look for (referred to as ENTS):
+-DATE
+-EVENT
+-TIME
+
+-GPE
+-LOC
+-EVENT
+-FAC
 
 Sentence format:
 Form 1: ([PP] with DATE) + [NP] + [VP]
@@ -316,6 +343,8 @@ For a sentence with both forms, the question will ask about the date in the firs
 """
 
 # fiona
+
+
 def when(sentence):
     question = "When"
     has_date = False
@@ -365,9 +394,9 @@ def when(sentence):
         np = sentence.constituency.children[0].children[2].children
         vp = sentence.constituency.children[0].children[3].children
 
-        # check date in [PP]
+        # check DATE in [PP]
         pp_phrase = get_children(pp)
-        pp_has_date = check_pp_has_ent(pp_phrase, dates)
+        pp_has_date = check_pp_has_date(pp_phrase, dates)
         if pp_has_date == False:
             return None
 
@@ -426,9 +455,9 @@ def when(sentence):
             pp = vp[-1].children
             vp = vp[:-1]
 
-        # check date in [PP]
+        # check DATE in [PP]
         pp_phrase = get_children(pp)
-        pp_has_date = check_pp_has_ent(pp_phrase, dates)
+        pp_has_date = check_pp_has_date(pp_phrase, dates)
         if pp_has_date == False:
             return None
 
@@ -441,136 +470,12 @@ def when(sentence):
 
 # fiona
 
-"""
-Entities to look for:
--GPE, LOC, FAC
 
-Same structure as "When"
-"""
 def where(sentence):
-    question = "Where"
-    has_place = False
-    places = []  # keep track of places in sentence to check if [PP] has one
-    # check if sentence has a one of the listed entities
-    for ent in sentence.entities:
-        if ent.type == "GPE" or ent.type == "LOC" or ent.type == "FAC":
-            has_place = True
-            places.append(ent.text)
-    if not has_place:
-        return None
-    # check proper noun in subject of sentence
-    if not check_NNP(sentence.dependencies):
-        return None
-
-    # verb tense of [VP] matching to do/does/did
-    tense_matching = {"VBD": " did", "VBP": " do", "VBZ": " does"}
-    verb_tenses = ["VBD", "VBP", "VBZ"]
-
-    # check sentence format
-    if len(sentence.constituency.children[0].children) < 3:
-        return None
-
-    np_or_pp = sentence.constituency.children[0].children[0].label
-
-    if np_or_pp != "PP":
-        if np_or_pp != "NP":
-            return None
-        else:
-            # [NP] + [VP] + [.] form (w/o period)
-            possible_vp = sentence.constituency.children[0].children[1].label
-            possible_period = sentence.constituency.children[0].children[2].label
-            if possible_vp != "VP" or possible_period != ".":
-                return None
-    else:
-        # [PP] + [,] + [NP] + [VP] + [.] form (w/o period)
-        possible_comma = sentence.constituency.children[0].children[1].label
-        possible_np = sentence.constituency.children[0].children[2].label
-        possible_vp = sentence.constituency.children[0].children[3].label
-        if possible_comma != "," or possible_np != "NP" or possible_vp != "VP":
-            return None
-
-    #[PP] + [NP] + [VP]
-
-    if np_or_pp == "PP":
-        pp = sentence.constituency.children[0].children[0].children
-        np = sentence.constituency.children[0].children[2].children
-        vp = sentence.constituency.children[0].children[3].children
-
-        # check places in [PP]
-        pp_phrase = get_children(pp)
-        pp_has_place = check_pp_has_ent(pp_phrase, places)
-        if pp_has_place == False:
-            return None
-
-        # get tense of do
-        vp_tense = vp[0].label
-        do_tense = ""
-        switch_order = False  # if [MD] or be/have + participle ([VBN/VBG])
-        if vp_tense == "MD":
-            switch_order = True
-        elif vp_tense not in verb_tenses:
-            return None
-        else:
-            do_tense = tense_matching[vp_tense]
-
-        lemma = get_lemma(sentence, vp)
-        if (lemma == "be" or lemma == "have"):
-            switch_order = True
-
-        rest_of_question = construct_question(
-            np, vp, switch_order, do_tense, lemma)
-
-        return question + rest_of_question
-
-    # [NP][VP] (with [PP] in last part of [VP])
-    # doesn't work with verb + infinitive
-    else:
-        np = sentence.constituency.children[0].children[0].children
-        vp = sentence.constituency.children[0].children[1].children
-
-        # get tense of do
-        vp_tense = vp[0].label
-        do_tense = ""
-        switch_order = False  # if [MD] or be/have + participle ([VBN/VBG])
-        if vp_tense == "MD":
-            switch_order = True
-        elif vp_tense not in verb_tenses:
-            return None
-        else:
-            do_tense = tense_matching[vp_tense]
-
-        lemma = get_lemma(sentence, vp)
-        if (lemma == "be" or lemma == "have"):
-            switch_order = True
-
-        # check last part of [VP] is [PP] (with places)
-        if switch_order:
-            if vp[1].label != "VP":
-                return None
-            if vp[1].children[-1].label != "PP":
-                return None
-            pp = vp[1].children[-1].children
-            vp = [vp[0]] + vp[1].children[:-1]
-        else:
-            if vp[-1].label != "PP":
-                return None
-            pp = vp[-1].children
-            vp = vp[:-1]
-
-        # check place in [PP]
-        pp_phrase = get_children(pp)
-        pp_has_place = check_pp_has_ent(pp_phrase, places)
-        if pp_has_place == False:
-            return None
-
-        rest_of_question = construct_question(
-            np, vp, switch_order, do_tense, lemma)
-
-        return question + rest_of_question
-
     return None
 
 # look for "because": Because...[NP][VP] or [NP][VP w because]
+
 
 def why(sentence):
     if not is_simple_predicate(sentence):
@@ -788,6 +693,12 @@ if __name__ == "__main__":
     parser = load_text(input_file)
     # get parser.sentences with appositions
     questions = []
+    who_questions = []
+    what_questions = []
+    howmany_questions = []
+    yesno_questions = []
+    when_questions = []
+    why_questions = []
 
     for sentence in parser.sentences:
         who_question = who(sentence)
@@ -795,23 +706,37 @@ if __name__ == "__main__":
         howmany_question = howmany(sentence)
         yesno_question = yesno(sentence)
         when_question = when(sentence)
-        where_question = where(sentence)
         why_question = why(sentence)
 
+
+
         if (who_question != None):
-            questions.append(who_question)
+            who_questions.append(who_question)
         if (howmany_question != None):
-            questions.append(howmany_question)
+            howmany_questions.append(howmany_question)
         if (what_question != None):
-            questions.append(what_question)
+            what_questions.append(what_question)
         if (yesno_question != None):
-            questions.append(yesno_question)
+            yesno_questions.append(yesno_question)
         if (when_question != None):
-            questions.append(when_question)
-        if (where_question != None):
-            questions.append(where_question)
+            when_questions.append(when_question)
         if (why_question != None):
-            questions.append(why_question)
+            why_questions.append(why_question)
+
+    i = 0
+    while(i < N):
+        if (i < len(who_questions)):
+            questions.append(who_questions[i])
+        if (i < len(what_question)):
+            questions.append(who_questions[i])
+        if (i < len(howmany_questions)):
+            questions.append(who_questions[i])
+        if (i < len(why_questions)):
+            questions.append(who_questions[i])
+        if (i < len(when_questions)):
+            questions.append(who_questions[i])
+        if (i < len(yesno_questions)):
+            questions.append(who_questions[i])
 
     for i in range(N):
         if (i < len(questions)):
