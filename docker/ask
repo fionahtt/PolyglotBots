@@ -748,6 +748,8 @@ def is_howmany(subject, predicate):
 def yesno(sentence):
     if not is_simple_predicate(sentence):
         return None
+    if not check_NNP(sentence.dependencies):
+        return None
 
     tree = sentence.constituency
     NP_node = tree.children[0].children[0]
@@ -792,20 +794,26 @@ if __name__ == "__main__":
     for sentence in parser.sentences:
         who_question = who(sentence)
         what_question = what(sentence)
+        """
         howmany_question = howmany(sentence)
         yesno_question = yesno(sentence)
+        """
         when_question = when(sentence)
         where_question = where(sentence)
         why_question = why(sentence)
 
         if (who_question != None):
             questions.append(who_question)
+        """
         if (howmany_question != None):
             questions.append(howmany_question)
+        """
         if (what_question != None):
             questions.append(what_question)
+        """
         if (yesno_question != None):
             questions.append(yesno_question)
+        """
         if (when_question != None):
             questions.append(when_question)
         if (where_question != None):
