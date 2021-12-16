@@ -34,9 +34,6 @@ def is_simple_predicate(sentence):
     for i in range(3):
         if tree_labels[i].label != correct_labels[i]:
             return False
-        if tree_labels[i].label == 'VP':
-            if len(tree_labels[i].children) > 2:
-                return False
     return True
 
 
@@ -322,7 +319,7 @@ def when(sentence):
                 return None
     else:
         # [PP] + [,] + [NP] + [VP] + [.] form (w/o period)
-        
+
         if len(sentence.constituency.children[0].children) < 5:
             return None
 
@@ -553,10 +550,10 @@ def why(sentence):
 
     def find_because_index(sentence):
         for word in sentence.words:
-            if word.deprel == 'mark':
-                if word.text.lower() != 'to':
-                    return word.id - 1
+            if word.text.lower() == 'because':
+                return word.id - 1
         return None
+
     because_i = find_because_index(sentence)
     if because_i == None:
         return None
@@ -580,8 +577,8 @@ def why(sentence):
     (expl_does_question_result, is_aux) = expl_does_question_phrase(
         subject, predicate, new_sentence_obj.words[root_verb_index], sentence)
 
-    if (expl_does_question_result, is_aux) == (None,False) or (expl_does_question_result, is_aux) == (None, True): 
-            return None
+    if (expl_does_question_result, is_aux) == (None, False) or (expl_does_question_result, is_aux) == (None, True):
+        return None
 
     question = question + expl_does_question_result
 
@@ -589,7 +586,7 @@ def why(sentence):
         if word == ',':
             question = question + ","
         else:
-            question = question + " " + word.text.lower()
+            question = question + " " + word.text
     question += '?'
 
     return question
@@ -638,7 +635,7 @@ def howmany(sentence):
         (expl_does_question_result, is_aux) = expl_does_question_phrase(
             subject, predicate, sentence.words[root_verb_index], sentence)
 
-        if ((expl_does_question_result, is_aux) == (None,False))or ((expl_does_question_result, is_aux) == (None, True)): 
+        if ((expl_does_question_result, is_aux) == (None, False)) or ((expl_does_question_result, is_aux) == (None, True)):
             return None
 
         question = question + ' ' + expl_does_question_result
@@ -798,8 +795,8 @@ def yesno(sentence):
     (expl_does_question_result, is_aux) = expl_does_question_phrase(
         subject, predicate, verb, sentence)
 
-    if (expl_does_question_result, is_aux) == (None,False) or (expl_does_question_result, is_aux) == (None, True): 
-            return None
+    if (expl_does_question_result, is_aux) == (None, False) or (expl_does_question_result, is_aux) == (None, True):
+        return None
 
     expl_does_question_result_split = expl_does_question_result.split()
 
